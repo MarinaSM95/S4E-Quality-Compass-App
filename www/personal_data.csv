@@ -1,0 +1,21 @@
+﻿input_id;dependence_value;dependence;required;question;input_type;option;section;category;property
+P01;;;1;Are you involved in any way with the Skills4EOSC project?;select;Yes, I am a partner of the project;0. Personal Data;personal data;Skills4EOSC involvement
+P01;;;1;Are you involved in any way with the Skills4EOSC project?;select;Yes, I work in one of the Competence Centers from the project;0. Personal Data;personal data;Skills4EOSC involvement
+P01;;;1;Are you involved in any way with the Skills4EOSC project?;select;Yes, I am part of the EOSC Consortium;0. Personal Data;personal data;Skills4EOSC involvement
+P01;;;1;Are you involved in any way with the Skills4EOSC project?;select;No;0. Personal Data;personal data;Skills4EOSC involvement
+P02;;;0;Please, provide your email:;text;example@gmail.com;0. Personal Data;personal data;email
+P03;;;0;Your current role:;text;High education teacher;0. Personal Data;personal data;role
+P04;;;0;Your institution:;text;Carlos III University of Madrid;0. Personal Data;personal data;institution
+P05;;;0;Field of expertise:;select;Natural Sciences;0. Personal Data;personal data;field
+P05;;;0;Field of expertise:;select;Engeneering and technology;0. Personal Data;personal data;field
+P05;;;0;Field of expertise:;select;Medical and Health Sciences;0. Personal Data;personal data;field
+P05;;;0;Field of expertise:;select;Agricultural;0. Personal Data;personal data;field
+P05;;;0;Field of expertise:;select;Social Sciences;0. Personal Data;personal data;field
+P05;;;0;Field of expertise:;select;Humanities;0. Personal Data;personal data;field
+P05;;;0;Field of expertise:;select;Other;0. Personal Data;personal data;field
+P06;Other;P05;0;Field of expertise:;text;Write your field here;0. Personal Data;personal data;field
+P07;;;0;How familiar are you with the implementation of Quality Assurance processes in learning materials?;textSlider;Very familiar;0. Personal Data;personal data;previous QA experience
+P07;;;0;How familiar are you with the implementation of Quality Assurance processes in learning materials?;textSlider;Familiar;0. Personal Data;personal data;previous QA experience
+P07;;;0;How familiar are you with the implementation of Quality Assurance processes in learning materials?;textSlider;Somewhat familiar;0. Personal Data;personal data;previous QA experience
+P07;;;0;How familiar are you with the implementation of Quality Assurance processes in learning materials?;textSlider;Not very familiar;0. Personal Data;personal data;previous QA experience
+P07;;;0;How familiar are you with the implementation of Quality Assurance processes in learning materials?;textSlider;Not familiar at all;0. Personal Data;personal data;previous QA experience

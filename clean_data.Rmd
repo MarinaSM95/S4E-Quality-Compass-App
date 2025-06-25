@@ -1,0 +1,217 @@
+---
+title: "cleaning dataset"
+author: "Marina Sánchez Moreno"
+date: "2025-03-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introducing the dataset
+
+The dataset we will work on has been built by partners in T2.4 - "Learning materials
+quality assurance and certification framework" of the project Skills4EOSC (link), reviewed and published together with D2.7... (ADD LINK TO ZENODO) as one of the outputs from project. 
+
+The main dataset used to build the questionnaire includes the quality assurance (QA) indicators that will measure the compliance of open science
+courses and modules to the Skills4EOSC QA and Certification Framework. Moreover, a small
+set of questions was added to collect relevant information about the user for future
+analysis on responses and feedback to improve the app.
+
+The first dataset (Quality Assurance questions) contains the following information:
+
+  - *id_ind*:	unique identification number for each indicator, regardless their section
+  of category. Letter of subframework followed by a number
+  - *dependence*:	It provides the id of the indicator it is subordinated to. It determines whether
+  an indicator is subordinated to another indicator's response. It reduces redundant or unecessary
+  questions. For instance, if the user has indicated that their learning resource does not provide
+  a title, the app will not ask more questions about the title.
+  - *dependence_value*:	when there is dependence (dependence is not NA), this variable captures
+  the needed answer choice in the parent question. For instance, if E02 is dependent of E01,
+  _dependence_ for E02 would be "E01" and _dependence_value_ would be the answered in E01 that
+  activates question E02 (e.g.: "Yes")
+  - *question_txt*:	The user will need to read and answer these questions to assess QA compliance. Equivalent to "Checklist question" in the general implementation v3 document  
+  - *subframework*:	It shows the subframework the indicator is part of. This variable is just for partners to easily update the database
+  - *property*:	The topic/item the indicator refers to (one word). It is equivalent to the column "property" in the general implementation v3 document
+  - *category*:	It is the category that the property of the indicator is part of. It helps organizing the indicators in a user-friendly way
+  - *section*: It is the section that the category of the indicator is part of. It helps organizing the indicators in a user-friendly way
+  - *minimal_detailed*: 0 if the indicator is detailed and 1 if it is minimal (old "essential")
+  - *answer_user*: it tracks the user answer (YES=1 or NO=0)
+  - *bestpractices*	Plain text with the best practices associated to the indicator 
+  - *notes*: additional information (e.g. definitions) provided to the user regarding the question. Generally, it provides definitions about a term.
+  - *keywords_ind*:	list of terms/topics related to the indicator. 
+    
+The second dataset regarding personal data questions follows a similar structure.
+Therefore, no much pre-processing will be needed.
+
+## Pre-processing the dataset
+
+### Quality Assurance dataset
+
+- Read and clean raw data
+
+```{r}
+# Libraries
+library(readr)
+library(dplyr)
+library(plyr)
+library(tidyr)
+library(stringr)
+library(tidyverse)
+
+
+raw_data1 <- read_csv2 (".//www/qa_data.csv", col_names = TRUE, na= "" )
+
+qa_data <- raw_data1 %>% 
+  # Remove empty rows
+  filter(!is.na(question_txt)) 
+
+```
+
+New variables that we need to create:
+
+
+  - *options*: List of possible responses (choices) to the question, separated by ";". 
+    - For most of our questions (yes/no questions) this will be "Yes;No". For a list of,
+    this will be a mc type (multiple choice), that is, "Yes;No;Not applicable"
+  - *required*: logical TRUE/FALSE signifying if a question is required. 
+    - We will set this as TRUE for minimal indicators only and FALSE for detailed ones.
+
+```{r}
+
+
+
+
+
+# CREATE COLUMNS
+# Changes to columns
+qa_data <- qa_data %>% 
+  # Rename question_txt with question
+  dplyr::rename("question"="question_txt") %>% 
+  # Rename id_ind to input_id
+  dplyr::rename("input_id" = "id_ind") %>% 
+  # Create a column "options" with "Yes;No" or "Yes;No;Not applicable"
+  dplyr::mutate(options = case_when(
+    input_id == "G15"  ~ "Yes;No;Not applicable",
+    input_id == "M06"  ~ "Yes;No;Not applicable",
+    input_id == "M06"  ~ "Yes;No;Not applicable",
+    input_id =="M07" ~ "Yes;No;Not applicable",
+    input_id == "F07" ~ "Yes;No;Not applicable",
+    input_id == "E05" ~ "Yes;No;Not applicable",
+    TRUE ~ "Yes;No" )) %>% 
+  #Based on the values from "options", create a column input_type with "y/n" or "mc"
+  dplyr::mutate(input_type= "mc") %>%
+  # create column required with TRUE when the indicator is minimal and FALSE ifelse
+  dplyr::mutate(required= case_when(minimal_detailed =="minimal"~ TRUE,
+                                    minimal_detailed !="minimal"~ FALSE))%>%
+  # Create column page from column section
+  dplyr::rename("pages"="section") %>% 
+  select(!(starts_with("source")))
+
+```
+
+
+### Personal data 
+
+For the dataset regarding personal data, we created the csv using the required variables,
+so no further changes are needed. We only need to read the dataset and then merged it with
+the previous one:
+
+```{r}
+# Read csv file
+raw_data2 <- read_csv2 (".//www/personal_data.csv", col_names = TRUE, na= "" )
+
+personal_data <- raw_data2 %>% 
+  # Remove empty rows
+  dplyr::filter(!is.na(question)) %>%
+  # Rename section column to pages
+  dplyr::rename("pages"="section") %>% 
+  # Change values from 1 to TRUE for all questions
+  dplyr::mutate(required= case_when(required =="1"~ TRUE, required!="1"~ FALSE)) %>% 
+  # Based on the values from "option" by group (duplicates of the same indicator),
+  # create a column "options" (values separated by ";")
+  group_by(input_id) %>% 
+  dplyr::reframe(options = stringr::str_c(option, collapse=";"), across()) %>% 
+  # delete duplicates
+  dplyr::distinct(input_id, .keep_all=TRUE) %>% 
+  # delete old column option
+  dplyr::select(-option)
+  
+
+```
+
+## Merging datasets
+
+```{r}
+
+survey <- rbind.fill(qa_data, personal_data)
+
+survey_clean <- survey %>%
+  filter(input_type %in% c("mc", "text", "textSlider", "select")) %>%
+  distinct(input_id, .keep_all = TRUE) %>%
+  filter(!is.na(input_id), input_id != "") %>%
+  mutate(
+    options = ifelse(
+      is.na(options),
+      NA_character_,
+      gsub("\\s*;\\s*", ";", trimws(options))
+    )
+  )
+
+```
+
+
+## Multipage survey
+
+To structure the survey by page, we create a variable *page* coding the values from
+variable *section*. Moreover, we want it to be ordered in a certain way: 
+- 0. Personal Data
+- 1. Content & Structure
+- 2. Implementation
+- 3. Evaluation
+- 4. Compliance, Licencing & Ethics
+
+Then, we need to group and nest the dataframe:
+
+```{r}
+
+survey_clean <- survey_clean %>% 
+  
+  dplyr::arrange(match(property, my_order))
+
+order_property <- c("Background information", "", )
+test <- survey_clean$property
+dplyr::arrange(pages) %>% 
+# Remove break lines
+survey_clean$notes <-str_replace_all(survey_clean$notes, '\\n', '')
+# Check remaining line breaks
+#str_detect(survey_clean$notes, '\\n')
+
+  test
+```
+
+In the documentation of the library, the multi-page option is explained for the case
+in which dependency happens between indicators within the same page. After checking
+this aspect, we noticed all dependent indicators happened to be grouped in the same
+page/section as their   in the same to check if dependency was respected even when the dependency was
+between two indicators from different pages
+## Save dataset
+
+```{r}
+
+write.csv2(survey_clean, ".//www/survey_data.csv")
+
+
+```
+
+## References
+
+- 
+-
+-
+-
+-
+
+
+
