@@ -1,0 +1,7 @@
+version: 3
+services:
+  shiny:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3838:3838"
