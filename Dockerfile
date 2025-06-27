@@ -10,7 +10,7 @@ RUN <<EOF cat >> index.html
 <!DOCTYPE html>
 <html>
   <head>
-    <meta http-equiv="Refresh" content="0; url=/S4E-Quality-Compass-App/" />
+    <meta http-equiv="Refresh" content="0; url=./S4E-Quality-Compass-App/" />
   </head>
   <body></body>
 </html>
