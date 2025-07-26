@@ -7,7 +7,6 @@ library(shiny)
 library(bslib)
 library(shinydashboard)
 library(shinydashboardPlus)
-#library(shinysurveys) NOT NEEDED ANYMORE
 library(shinythemes)
 library(shinyjs)
 library(shinyWidgets)
@@ -22,18 +21,22 @@ library(DT)
 
 
 
-#survey_full<- read_csv2(".//www/survey_data.csv", col_names = TRUE)
-#shiny::addResourcePath ("survey, ".//www/checklist/checklist.html")
+
 
 # Load and preprocess the survey data (Global environment)
-survey <- read_csv2("www/test.csv") %>%
+survey <- read_csv2("www/self-assessment_clean.csv") %>%
   mutate(
     help = ifelse(is.na(notes) | notes == "", NA, notes),
     choices = ifelse(!is.na(options), strsplit(options, ";"), NA),
     required = as.logical(required)
   )
-# Define extended input type textSlider
-# CHECK DIFFERENCE
+
+# Load and preprocess the general feedback data
+general_feedback <- read_csv2("www/general_feedback_clean.csv") %>%
+  mutate(
+    choices = ifelse(!is.na(options), strsplit(options, ";"), NA),
+    required = as.logical(required)
+  )
 
 
 
@@ -42,34 +45,59 @@ ui <- dashboardPage(
  
   ## HEADER
   header=dashboardHeader(
-    #TITLE in Header: title + logo
+    #TITLE in Header: logo
     title = tags$div(
-      style = "display: flex; align-items: center; height: 100%; overflow: visible;",
+      style = "display: flex; align-items: center; height: 70px;",
       tags$a(
         href = "https://www.skills4eosc.eu/",
+        
+        # Horizontal logo (default)
         tags$img(
-          src = "logo_S4E_neg_comp.png",  
-          title = "Skills4EOSC website", 
-          height = "70px",
-          style = "margin-left: 11px; margin-right: 5px; margin-top: 0px;"
+          src = "logo_S4E_neg_horizontal.png",
+          title = "Skills4EOSC website",
+          height = "55px",
+          class = "logo-expanded"
+          
+        ),
+        
+        # Vertical logo (collapsed)
+        tags$img(
+          src = "logo_S4E_neg_vertical.png",
+          title = "Skills4EOSC website",
+          height = "30px",
+          class = "logo-collapsed",
+          style = "display: none;"
         )
-      ),
-      tags$div(
-        "S4E Quality Compass",
-        style = "font-size: 25px; font-weight: bold; line-height: 1.2;"
       )
     )
     ,
     # Title width of header
-    titleWidth="250px" # same as width in Sidebar
+    titleWidth="250px", # same as width in Sidebar
+    tags$li(
+      class = "dropdown",
+      
+      tags$div(
+        style = "
+      display: flex;
+      align-items: center;
+      height: 70px;
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      justify-content: flex-start;
+    ",
+        "S4E Quality Compass"
+      )
+    )
    ),
   
   
  
   ## SIDEBAR (built dinamically in the server section)
   dashboardSidebar(
+    
     width = 250,
-    uiOutput("dynamic_sidebar")
+    sidebarMenu( uiOutput("dynamic_sidebar"))
   )
   
   ,
@@ -80,30 +108,67 @@ ui <- dashboardPage(
     tags$style(HTML("
   /* Make header taller */
   .main-header {
-    height: 100px !important;
+    height: 70px !important;
+    background-color: #3C8DBC !important;
   }
+  
 
   /* Push sidebar content down to avoid overlap */
   .main-sidebar {
-    padding-top: 110px !important;
+    padding-top: 90px !important;
   }
 
   /* Style and extend the title area */
   .main-header .logo {
-    background-color: #1E282C !important; /* Or match your color */
-    height: 110px !important;
-    line-height: 20px !important;
-    padding: 5px;
-    overflow: visible;
+    height: 70px !important;
+  width: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 !important;
+  transition: width 0.3s ease;
   }
+  .logo-expanded {
+  max-height: 50px;
+  height: auto;
+  display: block;
+}
 
-  /* Adjust the navbar to align properly */
+.logo-collapsed {
+  display: none;
+  max-height: 40px;
+}
+
+.sidebar-collapse .logo-expanded {
+  display: none !important;
+}
+.sidebar-collapse .logo-collapsed {
+  display: inline-block !important;
+}
+
+
+/* Collapsed logo fits */
+.sidebar-collapse .main-header .logo {
+  width: 50px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0 !important;
+}
+
+  /* Adjust the navbar to align */
   .main-header .navbar {
-    margin-left: 250px;
-    height: 100px !important;
+    margin-left: 0px;
+    float: left !important;
+    
     
   }
- 
+ .navbar-custom-menu > .navbar-nav > .dropdown {
+  width: 100%; /* control the container width */
+}
+
+ /* About page */
  
   #intro_about .box-header{
   color: white;
@@ -138,6 +203,8 @@ ui <- dashboardPage(
   #compass_about .box-header{
     color: white;
   }
+  
+  /* Self-assessment test page */
   #introassessment{
     background-color: #d26f2d;
     color: white;
@@ -159,73 +226,164 @@ ui <- dashboardPage(
   #outputs_about .box-header{
     color: white;
   }
-    
-    
-     .section-box {
-  border: 2px solid transparent;
-  transition: border 0.3s, background-color 0.3s, box-shadow 0.3s;
-  border-radius: 12px;
-  text-align: center;
-  display: flex;
+  
+#clickforassessment {
+  position: center;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 100px;
-  min-width: 180px;
-  flex: 1;
-  font-size: 14px;
-}
-.section-box.active {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  gap: 12px;
+  padding: 14px 28px;
+  background: linear-gradient(145deg, #0f0f0f, #1c1c1c);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 100px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.4s ease-in-out;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  z-index: 1;
 }
 
-  
+#clickforassessment::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(from 0deg, #00ffff, #ff00ff, #00ffff);
+  animation: rotate 4s linear infinite;
+  z-index: -2;
+}
+
+#clickforassessment::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  background: #0a0a0a;
+  border-radius: inherit;
+  z-index: -1;
+}
+
+#clickforassessment:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 40px rgba(0, 255, 255, 0.2);
+}
+
+#clickforassessment:hover .arrow {
+  transform: translateX(6px);
+}
+
+.arrow {
+  width: 22px;
+  height: 22px;
+  transition: transform 0.3s ease-in-out;
+  color: #00ffff;
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 #sections_select {
   display: flex;
   justify-content: center;
   gap: 10px;
-  flex-wrap: wrap; /* <-- allows wrapping */
-  margin-bottom: 20px;
-  margin: 20px;
+  flex-wrap: wrap;
+  margin: 30px;
 }
-#select_section0.active {
-  border-color: #7D7D7D !important;
-  background-color: #B8B8B8 !important;
+
+/* Base style for all section boxes */
+.section-box {
+  position: relative;
+  flex: 1;
+  height: 70px;
+  min-width: 140px;
+  font-size: 15px;
+  text-align: center;
   font-weight: bold;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 15px;
+  margin-left: -20px;
+  z-index: 1;
+  background-color: #f4f4f4; /* light gray for inactive */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s, box-shadow 0.3s, background-color 0.3s;
+  clip-path: polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%, 10% 50%);
+}
+
+/* First box: no overlap + rounded left */
+.section-box:first-child {
+  margin-left: 0;
+  clip-path: polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%);
+  border-top-left-radius: 35px;
+  border-bottom-left-radius: 35px;
+}
+
+/* Last box: sharp arrowhead style */
+.section-box:last-child {
+  clip-path: polygon(0 0, 90% 0, 100% 50%, 90% 100%, 0 100%, 10% 50%);
+  flex-grow: 1.2;
+  z-index: 0;
+}
+
+/* Active section box: enlarged, strong shadow, colored background */
+.section-box.active {
+  transform: scale(1.03);
+  z-index: 2;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Colored backgrounds for active sections */
+#select_section0.active {
+  background-color: #333 !important; /* gray */
 }
 #select_section1.active {
-  border-color: #F49200 !important;
-  background-color: #FFC165 !important;
-  font-weight: bold;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+  background-color: #F49200 !important; /* orange */
 }
 #select_section2.active {
-  border-color: #95C11F !important;
-  background-color: #C2E561 !important;
-  font-weight: bold;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+  background-color: #95C11F !important; /* green */
 }
 #select_section3.active {
-  border-color: #3278B1 !important;
-  background-color: #69A4D5 !important;
-  font-weight: bold;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+  background-color: #3278B1 !important; /* blue */
 }
 #select_section4.active {
-  border-color: #E6007E !important;
-  background-color: #FF6DBD !important;
-  font-weight: bold;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+  background-color: #E6007E !important; /* pink */
 }
+
+
+/* Optional: inactive sections text color darker for readability */
+.section-box:not(.active) {
+  color: #525252;
+}
+
+
+
 #progress_container {
   margin-top: 10px;
+  
 }
 .progress {
   height: 25px;
+   border-radius: 10px !important; 
 }
 .progress-bar {
   font-weight: bold;
   background-color: #337ab7;
+  border-radius: 10px !important; 
 }
 #self-assessment {
   border-radius: 12px !important;
@@ -237,8 +395,7 @@ ui <- dashboardPage(
   padding: 0;
   cursor: pointer;
 }"
-))
-    ,
+)),
     
     tabItems(
       tabItem(tabName = "about",
@@ -257,14 +414,14 @@ ui <- dashboardPage(
                      tags$p("Welcome to the Skills4EOSC Quality Compass, the self-assessment app that
                      helps you in making your courses compliant with the Skills4EOSC Quality
                      Assurance Framework. In our mission of ensuring quality in the full life-cycle
-                     of training, we have produced two main outputs that will guide you in taking your
+                     of training in Open Science, we have produced two main outputs that will guide you in taking your
                      learning resources to the next level."),
                      tags$li("S4E Quality Compass"),
                      tags$li("Skills4EOSC Checklist and Guide"),
                      tags$br(),
                      tags$p("By following our guidelines, you will ensure the integration of the FAIR-by-design 
                      methodology, the Minimum Viable Skillsets, key Ethical and Legal aspects and other 
-                     e-learning quality criteria in your course.")
+                     e-learning quality criteria in your Open Science course.")
                      )
               ),
               tags$div(tags$h3 (tags$b("At which stage of designing your course are you?")),
@@ -329,18 +486,18 @@ ui <- dashboardPage(
        ),
       
       tabItem(tabName = "assessment",
-              # Panel shown by default, hidden survey until button "clickforsurvey" is clicked
-              conditionalPanel("input.clickforsurvey == 0", 
+              # Panel shown by default, hidden survey until button "clickforassessment" is clicked
+              conditionalPanel("input.clickforassessment == 0", 
                                
               fluidRow (
                 box(
                   id = "introassessment",
-                  title = tags$b("S4E Quality Compass"),
-                  tags$p("The Skills4EOSC Quality Compass is a self-assessment
-                  test that covers all indicators from the Skills4EOSC Quality
-                  Assurance Framework. You will navigatethrough 5 sections: background
-                  information, Content and Structure, Implementation, Evaluation and
-                  Compliance, Licensing and Ethics. In addition to answering the question, 
+                  title = tags$b("Self-assessment test"),
+                  tags$p("The Skills4EOSC Quality self-assessment
+                  test covers all indicators from the Skills4EOSC Quality
+                  Assurance Framework. You will navigate through 5 sections: Background
+                  Information, Content and Structure, Implementation, Evaluation and
+                  Licensing and Ethics. In addition to answering the questions, 
                   we encourage you to provide any comments or doubts regarding the questions.
                   Just click on the flag next to each question, write your comments and send them."),
                   tags$p("After answering some those questions, you
@@ -362,26 +519,29 @@ ui <- dashboardPage(
                   height = "10%",
                   draggable = FALSE,
                   fixed = TRUE,
-                  div(tags$br(),actionButton("clickforsurvey", label ="Start self-assessment test"))
+                  div(tags$br(),actionButton("clickforassessment", label ="Start Self-assessment Test"
+                                             ))
+                  
                     #actionButton(inputId = "m", label = "Proceed", icon = NULL)   ),  ## Conditional Panel for Approval   
                   ))),
-              # survey shown when button is clicked
-              conditionalPanel("input.clickforsurvey == 1",
-              tags$h2("S4E Quality Compass"),                 
+              # Assessment shown when button is clicked
+              conditionalPanel("input.clickforassessment == 1",
+              tags$h2("S4E Quality Self-assessment"),                 
               fluidRow (
                 
                   div(id="sections_select", style = "display: flex; justify-content: center; gap: 10px; height: 100%;",
-                  div(id="select_section0", class="section-box", "Personal Data", width=NULL),
+                  div(id="select_section0", class="section-box", "Background Information", width=NULL),
                   div(id="select_section1", class="section-box","Content & Structure", width=NULL),
                   div(id="select_section2", class="section-box","Implementation", width=NULL),
                   div(id="select_section3", class="section-box","Evaluation", width=NULL),
-                  div(id="select_section4", class="section-box","Compliance, Licensing & Ethics", width=NULL)
+                  div(id="select_section4", class="section-box","Licensing & Ethics", width=NULL)
                 )),
-              uiOutput("progress_bar_ui"),
-                fluidRow(
-                  box(id="self-assessment",width=12, uiOutput("page_ui"))
-                 
-                )
+              div(id = "section_theme_container",
+                  uiOutput("progress_bar_ui"),
+                  fluidRow(
+                    box(id = "self-assessment", width = 12, uiOutput("page_ui"))
+                  )
+              )
               )),
       tabItem(tabName = "results",
               conditionalPanel(
@@ -431,13 +591,13 @@ ui <- dashboardPage(
                       valueBoxOutput("score_evaluation_minimal"),
                       valueBoxOutput("score_evaluation_detailed")                     
                       ),
-                  box(title = "Compliance, Licensing & Ethics",
+                  box(title = "Licensing & Ethics",
                       solidHeader = TRUE,
                       width = 6,
                       background = NULL,
                       style = "border-color: #E6007E; border-radius: 12px;",
-                      valueBoxOutput("score_compliance_minimal"),
-                      valueBoxOutput("score_compliance_detailed")
+                      valueBoxOutput("score_ethics_minimal"),
+                      valueBoxOutput("score_ethics_detailed")
                       )
                   ),
 
@@ -448,7 +608,64 @@ ui <- dashboardPage(
                       DT::dataTableOutput("Best_practices")
                   )
                 )
-              ))
+              )),
+      tabItem(tabName = "generalfeedback",
+              # Panel shown by default, hidden survey until button "clickforsurvey" is clicked
+              conditionalPanel("input.clickforsurvey == 0", 
+                               
+                               fluidRow (
+                                 box(
+                                   id = "introsurvey",
+                                   title = tags$b("General Feedback survey"),
+                                   tags$p("One of the core goals of the Skills4EOSC project
+                                   is to support the development of high-quality, FAIR, and
+                                   community-aligned learning materials for Open Science.
+                                   To do this, we created the Skills4EOSC Quality Assurance
+                                   Framework (QAF)—a practical reference tool designed to
+                                   guide trainers, course creators, and instructional designers
+                                   through essential quality indicators for building and evaluating
+                                   Open Science learning materials."),
+                                   tags$p("To make the framework more usable and adaptable,
+                                   we’ve built two main tools:"),
+                                   tags$ul(tags$li("the Checklist & Guide for planning during
+                                   the course design phase,"), tags$li("and the S4E Quality 
+                                   Compass app, a self-assessment tool for reviewing completed 
+                                   materials.")),
+                                   tags$p("As part of our commitment to continuous improvement,
+                                   we are collecting feedback from real users like you. Your
+                                   experience, opinions, and ideas are key to making the QAF 
+                                   even more effective, practical, and user-friendly."),
+                                   tags$p("This short survey will help us better understand
+                                   how the QAF is being used, how helpful it has been in 
+                                   supporting your work, and what can be done to improve it.
+                                   Your input will contribute directly to future updates of 
+                                   both the framework and the related tools. You do not need
+                                   to provide any personal information."), 
+                                   tags$p("Thank you for helping us strengthen Open Science
+                                   training through better tools and shared practices!"),
+                                   
+                                   top = 0,
+                                   left = 0,
+                                   right = 0,
+                                   bottom = 0,
+                                   width = 12,
+                                   height = "10%",
+                                   draggable = FALSE,
+                                   fixed = TRUE,
+                                   div(tags$br(),
+                                       actionButton("clickforsurvey", 
+                                                              label ="Start General Feedback Survey"
+                                   ))
+                                 ))),
+              conditionalPanel("input.clickforsurvey == 1",
+                               tags$h2("General Feedback Survey"),                 
+                               
+                               uiOutput("progress_bar2_ui"),
+                               
+                                   fluidRow(
+                                     box(id = "general-feedback", width = 12, uiOutput("feedback_ui"))
+                                   )
+              )
       )),
     
     
@@ -478,7 +695,7 @@ ui <- dashboardPage(
     
   )
     
-)
+))
 
 ## SERVER
 
@@ -499,14 +716,11 @@ server <- function(input, output, session) {
   output$dynamic_sidebar <- renderMenu({
     sidebarMenu(id = "sidebarMenuid", selected="about",
                 menuItem("About", tabName = "about", icon = icon("home")),
-                menuItem("S4E Quality Compass", icon = icon("list-check"),
-                         tabName = "assessment",
-                         menuSubItem("Self-assessment", tabName = "assessment"),
-                         if (submission_complete()) {
-                           menuSubItem("Results", tabName = "results")
-                         }
-                ),
-                menuItem("Feedback", tabName = "feedback", icon = icon("comments"))
+                menuItem("Quality Self-assessment Test", tabName = "assessment", icon = icon("list-check")),
+                if (submission_complete()) {
+                  menuItem("Results", tabName = "results", icon = icon("chart-bar"))
+                },
+                menuItem("General Feedback", tabName = "generalfeedback", icon = icon("comments"))
     )
   })
   
@@ -538,12 +752,18 @@ server <- function(input, output, session) {
     page_data <- survey %>% filter(pages == current_page())
     visible_index <- 0
     
+    header_row <- div(
+      style = "display: flex; align-items: center; gap: 12px; font-weight: bold; margin-bottom: 1em; padding-left: 2px;",
+      div(style = "min-width: 50px; text-align: center;", "Feedback"),
+      div(style = "width: 40px; text-align: center;", "Help notes"),
+      div(style = "flex: 1;", "Question")
+    )
+    
     questions_ui <- lapply(1:nrow(page_data), function(i) {
       row <- page_data[i, ]
       qid <- row$input_id
       inputId <- paste0("q_", qid)
       
-      # Handle dependency logic
       show_question <- TRUE
       if (!is.na(row$dependence) && nzchar(row$dependence)) {
         parent_val <- input[[paste0("q_", row$dependence)]]
@@ -559,12 +779,16 @@ server <- function(input, output, session) {
         tags$span("*", style = "color:red; margin-left:5px;")
       } else NULL
       
-      label_question <- tags$b(
-        tagList(paste0(visible_index, ". ", row$question), asterisk)
-      )
+      label_question <- tags$b(tagList(paste0(visible_index, ". ", row$question), asterisk))
       
-      help_text <- if (!is.na(row$notes) && nzchar(row$notes)) {
-        tags$p(style = "font-size: 90%; color: #555; margin-top: 0.25em; margin-bottom: 0.75em;", row$notes)
+      help_icon <- if (!is.na(row$notes) && nzchar(row$notes)) {
+        shinyBS::bsButton(
+          inputId = paste0("help_icon_", qid),
+          label = NULL,
+          icon = icon("circle-info"),
+          style = "info",
+          size = "extra-small"
+        )
       } else NULL
       
       choices <- if (row$input_type %in% c("mc", "select", "textSlider") && !is.na(row$options)) {
@@ -572,7 +796,6 @@ server <- function(input, output, session) {
         if (length(trimmed) == 0) NULL else trimmed
       } else NULL
       
-      # Feedback icon logic
       has_feedback <- !is.null(feedback_store[[qid]])
       flag_icon <- if (has_feedback) {
         icon("flag", class = "fa-solid", style = "color:red;")
@@ -589,7 +812,6 @@ server <- function(input, output, session) {
         title = tooltip_title
       )
       
-      # Input UI
       input_ui <- switch(
         row$input_type,
         "mc" = radioButtons(inputId = inputId, label = NULL, choices = choices,
@@ -602,16 +824,16 @@ server <- function(input, output, session) {
         div(style = "color:red;", paste("Unsupported input_type:", row$input_type))
       )
       
-      # Combine
-      div(style = "margin-bottom: 1.5em;",
-          fluidRow(
-            column(width = 1, feedback_button),
-            column(width = 11,
-                   label_question,
-                   help_text,
-                   div(style = "margin-top: 0.5em;", input_ui)
-            )
-          )
+      div(
+        style = "margin-bottom: 1.5em; display: flex; align-items: flex-start; gap: 22px;",
+        div(style = "min-width: 50px;", feedback_button),
+        div(style = "width: 40px; display: flex; align-items: center; justify-content: center;",
+            if (!is.null(help_icon)) help_icon else NULL
+        ),
+        div(style = "flex: 1;",
+            label_question,
+            div(style = "margin-top: 0.5em;", input_ui)
+        )
       )
     })
     
@@ -623,17 +845,38 @@ server <- function(input, output, session) {
       if (which(pages == current_page()) < length(pages))
         actionButton("next_page", "Next"),
       if (which(pages == current_page()) == length(pages))
-        actionButton("submit", "Submit")
+        actionButton("submit", "Submit"),
+      tags$script("Shiny.setInputValue('page_ui_ready', Math.random());")
     )
     
     box(
       title = current_page(),
       width = 12,
-      style = "border-radius: 12px;",  # round corners
+      style = "border-radius: 12px;",
+      header_row,
       do.call(tagList, questions_ui),
       nav_buttons
     )
   })
+  
+  observeEvent(input$page_ui_ready, {
+    page_data <- survey %>% filter(pages == current_page())
+    for (i in seq_len(nrow(page_data))) {
+      row <- page_data[i, ]
+      qid <- row$input_id
+      if (!is.na(row$notes) && nzchar(row$notes)) {
+        shinyBS::addPopover(
+          session,
+          id = paste0("help_icon_", qid),
+          title = "Note",
+          content = row$notes,
+          placement = "right",
+          trigger = "click"
+        )
+      }
+    }
+  })
+  
   
   # Navigation logic
   observeEvent(input$next_page, {
@@ -641,7 +884,7 @@ server <- function(input, output, session) {
     missing <- check_required_inputs(page_data, input)
     
     if (length(missing) > 0) {
-      output$error_message <- renderText("Please answer all required questions before continuing.")
+      output$error_message <- renderText("Please answer all required questions before continuing")
     } else {
       output$error_message <- renderText("")
       idpage <- which(pages == current_page())
@@ -651,18 +894,23 @@ server <- function(input, output, session) {
       }
     }
   })
-  
+  # Navigation previous button
   observeEvent(input$prev_page, {
     idpage <- which(pages == current_page())
     if (idpage > 1) {
       current_page(pages[idpage - 1])
+      # Move to top after clicking on previous
       runjs("window.scrollTo(0, 0);")
     }
   })
   
-  # Progress bar
+  
+  ## PROGRESS BAR
+  # Show only when it its not in page 1 (Background info)
   output$progress_bar_ui <- renderUI({
+    print(current_page()) 
     if (current_page() != pages[1]) {
+      
       tagList(
         div(id = "progress_container",
             div(class = "progress",
@@ -674,10 +922,10 @@ server <- function(input, output, session) {
         )
       )
     } else {
-      NULL
+      div(style = "height: 25px;")
     }
   })
-  
+  # Function: Progress bar completion, calculate percentages by each answered question
   get_completion_percent <- reactive({
     filtered <- survey %>% filter(pages != pages[1])
     total <- nrow(filtered)
@@ -693,6 +941,7 @@ server <- function(input, output, session) {
     updateTextInput(session, "current_page_internal", value = current_page())
   })
   
+  # Progress bar update visuals
   observe({
     percent <- get_completion_percent()
     runjs(sprintf("
@@ -749,7 +998,7 @@ server <- function(input, output, session) {
     shinyjs::addClass(id = current, class = "active")
     shinyjs::runjs(sprintf("$('#%s').fadeOut(200).fadeIn(200);", current))
   })
-  # SUBMIT button behaviour (it includes dependency and required, although this is not implemented)
+  # SUBMIT button behaviour (it includes dependency and required, although there are no required questions)
   observeEvent(input$submit, {
     cat("Submit button clicked!\n")  # For debugging
     page_data <- survey %>% filter(pages == current_page())
@@ -979,16 +1228,16 @@ server <- function(input, output, session) {
     valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon("clipboard"), color = "blue")
   })
   
-  # Section: Compliance, Licensing & Ethics
-  output$score_compliance_minimal <- renderValueBox({
+  # Section: Licensing & Ethics
+  output$score_ethics_minimal <- renderValueBox({
     req(user_results())
-    res <- score_by_section("4. Compliance, Licensing & Ethics", "minimal")
+    res <- score_by_section("4. Licensing & Ethics", "minimal")
     valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon("flag"), color = "yellow")
   })
   
-  output$score_compliance_detailed <- renderValueBox({
+  output$score_ethics_detailed <- renderValueBox({
     req(user_results())
-    res <- score_by_section("4. Compliance, Licensing & Ethics", "detailed")
+    res <- score_by_section("4. Licensing & Ethics", "detailed")
     valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon("clipboard"), color = "blue")
   })
 
@@ -1006,7 +1255,7 @@ server <- function(input, output, session) {
     # Filter to keep only relevant rows
     filtered <- merged %>%
       filter(
-        pages != "0. Personal Data",
+        pages != "0. Background information",
         Answer %in% c("No", "No answer"),
         !is.na(bestpractices) & bestpractices != ""
       ) %>%
@@ -1024,6 +1273,80 @@ server <- function(input, output, session) {
       rownames = FALSE
     )
   })
+  
+  ## GENERAL FEEDBACK SURVEY
+  output$feedback_ui <- renderUI({
+    categories <- unique(general_feedback$category)
+    
+    question_ui <- lapply(categories, function(cat) {
+      cat_questions <- general_feedback %>% filter(category == cat)
+      
+      questions <- lapply(seq_len(nrow(cat_questions)), function(i) {
+        row <- cat_questions[i, ]
+        input_id <- paste0("gf_", row$input_id)
+        parent_id <- if (!is.na(row$dependence)) paste0("gf_", row$dependence) else NULL
+        choices <- if (!is.na(row$options)) strsplit(row$options, ";")[[1]] else NULL
+        
+        label <- tags$b(paste0(i, ". ", row$question))
+        
+        input_ui <- switch(
+          row$input_type,
+          "mc" = radioButtons(input_id, NULL, choices = choices, inline = FALSE),
+          "select" = selectInput(input_id, NULL, choices = choices),
+          "textSlider" = shinyWidgets::sliderTextInput(input_id, NULL, choices = choices, force_edges = TRUE),
+          "text" = textAreaInput(input_id, NULL, placeholder = "Type your answer here...", height = "100px"),
+          NULL
+        )
+        
+        # ConditionalPanel for dependent questions
+        if (!is.null(parent_id) && !is.na(row$dependence_value)) {
+          condition <- sprintf("input['%s'] == '%s'", parent_id, row$dependence_value)
+          conditionalPanel(condition = condition,
+                           div(style = "margin-bottom: 1.5em;", label, input_ui))
+        } else {
+          div(style = "margin-bottom: 1.5em;", label, input_ui)
+        }
+      })
+      
+      box(title = cat, solidHeader = TRUE, width = 12,
+          style = "border-radius: 12px;",
+          questions
+      )
+    })
+    
+    tagList(
+      question_ui,
+      actionButton("submit_general_feedback", "Submit Feedback", class = "btn-primary")
+    )
+  })
+  
+  
+  
+  
+  #Store responses
+  observeEvent(input$submit_general_feedback, {
+    responses <- lapply(general_feedback$input_id, function(id) {
+      value <- input[[paste0("gf_", id)]]
+      if (is.null(value)) value <- NA
+      value
+    })
+    
+    result_df <- data.frame(
+      input_id = general_feedback$input_id,
+      question = general_feedback$question,
+      answer = unlist(responses),
+      stringsAsFactors = FALSE
+    )
+    
+    print(result_df)  # Or store/save it
+    
+    showModal(modalDialog(
+      title = "Thank you!",
+      "Your feedback has been submitted successfully.",
+      easyClose = TRUE
+    ))
+  })
+  
   
   # checklist iframe (about page)
   output$checklist <- renderUI({

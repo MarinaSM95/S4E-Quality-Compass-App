@@ -1,21 +1,74 @@
 ﻿input_id;dependence_value;dependence;required;question;input_type;option;section;category;property
-P01;;;1;Are you involved in any way with the Skills4EOSC project?;select;Yes, I am a partner of the project;0. Personal Data;personal data;Skills4EOSC involvement
-P01;;;1;Are you involved in any way with the Skills4EOSC project?;select;Yes, I work in one of the Competence Centers from the project;0. Personal Data;personal data;Skills4EOSC involvement
-P01;;;1;Are you involved in any way with the Skills4EOSC project?;select;Yes, I am part of the EOSC Consortium;0. Personal Data;personal data;Skills4EOSC involvement
-P01;;;1;Are you involved in any way with the Skills4EOSC project?;select;No;0. Personal Data;personal data;Skills4EOSC involvement
-P02;;;0;Please, provide your email:;text;example@gmail.com;0. Personal Data;personal data;email
-P03;;;0;Your current role:;text;High education teacher;0. Personal Data;personal data;role
-P04;;;0;Your institution:;text;Carlos III University of Madrid;0. Personal Data;personal data;institution
-P05;;;0;Field of expertise:;select;Natural Sciences;0. Personal Data;personal data;field
-P05;;;0;Field of expertise:;select;Engeneering and technology;0. Personal Data;personal data;field
-P05;;;0;Field of expertise:;select;Medical and Health Sciences;0. Personal Data;personal data;field
-P05;;;0;Field of expertise:;select;Agricultural;0. Personal Data;personal data;field
-P05;;;0;Field of expertise:;select;Social Sciences;0. Personal Data;personal data;field
-P05;;;0;Field of expertise:;select;Humanities;0. Personal Data;personal data;field
-P05;;;0;Field of expertise:;select;Other;0. Personal Data;personal data;field
-P06;Other;P05;0;Field of expertise:;text;Write your field here;0. Personal Data;personal data;field
-P07;;;0;How familiar are you with the implementation of Quality Assurance processes in learning materials?;textSlider;Very familiar;0. Personal Data;personal data;previous QA experience
-P07;;;0;How familiar are you with the implementation of Quality Assurance processes in learning materials?;textSlider;Familiar;0. Personal Data;personal data;previous QA experience
-P07;;;0;How familiar are you with the implementation of Quality Assurance processes in learning materials?;textSlider;Somewhat familiar;0. Personal Data;personal data;previous QA experience
-P07;;;0;How familiar are you with the implementation of Quality Assurance processes in learning materials?;textSlider;Not very familiar;0. Personal Data;personal data;previous QA experience
-P07;;;0;How familiar are you with the implementation of Quality Assurance processes in learning materials?;textSlider;Not familiar at all;0. Personal Data;personal data;previous QA experience
+P01;;;0;Are you involved in any way with the Skills4EOSC project?;select;Yes, I am a partner of the project;0. Background information;Skills4EOSC involvement;Skills4EOSC involvement
+P01;;;0;Are you involved in any way with the Skills4EOSC project?;select;Yes, I work in one of the Competence Centers from the project;0. Background information;Skills4EOSC involvement;Skills4EOSC involvement
+P01;;;0;Are you involved in any way with the Skills4EOSC project?;select;Yes, I am part of the EOSC Consortium;0. Background information;Skills4EOSC involvement;Skills4EOSC involvement
+P01;;;0;Are you involved in any way with the Skills4EOSC project?;select;No;0. Background information;Skills4EOSC involvement;Skills4EOSC involvement
+P02;;;0;Please, provide your course title:;text;"Example: ""TtT 2.1: Shaping Open Science Champions: a train-the-trainers course for educators of Phd candidate""";0. Background information;course title;course title
+P03;;;0;Your current role:;select;High education teacher;0. Background information;role;role
+P03;;;0;Your current role:;select;Researcher;0. Background information;role;role
+P03;;;0;Your current role:;select;Data Steward;0. Background information;role;role
+P03;;;0;Your current role:;select;Librarian;0. Background information;role;role
+P03;;;0;Your current role:;select;Policymaker;0. Background information;role;role
+P03;;;0;Your current role:;select;Civil Servant;0. Background information;role;role
+P03;;;0;Your current role:;select;Legal Expert;0. Background information;role;role
+P03;;;0;Your current role:;select;Other;0. Background information;role;role
+P04;Other;P03;0;Your current role:;text;Please, specify your current role;0. Background information;role;role
+P05;;;0;Your institution:;select;Other;0. Background information;institution;institution
+P05;;;0;Your institution:;select;Consortium GARR (GARR);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Consiglio Nazionale delle Ricerche (CNR);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Istituto Nazionale di Fisica Nucleare (INFN);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Università degli Studi di Torino (UNITO);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Politecnico di Torino (POLITO);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Fondazione Istituto Italiano di Tecnologia (IIT);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Università degli Studi di Milano-Bicocca (UNIMIB);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Università degli Studi di Trento (UNITN);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Fondazione Centro Euro-Mediterraneo sui Cambiamenti Climatici (CMCC);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Technische Universiteit Delft (TU-Delft);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Centre National de la Recherche Scientifique CNRS (CNRS);0. Background information;institution;institution
+P05;;;0;Your institution:;select;12 CSC-Tieteen Tietotekniikan Keskus Oy (CSC-IT) Finland;0. Background information;institution;institution
+P05;;;0;Your institution:;select;Danmarks Tekniske Universitet (DTU);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Copenhagen Business School (CBS);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Aalborg Universitet (AAU);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Det Kongelige Bibliotek Nationalbibliotek,Nationalbibliotek og Kobenhavns Universitetbibliotek (DKB);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Syddansk Universitet (SDU);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Aarhus Universitet (AU);0. Background information;institution;institution
+P05;;;0;Your institution:;select;European Plate Observing System - European Research Infrastructure Consortium (EPOS);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Istututo Nazionale di Geofisica e Vulcanologia (INGV);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Universitet I Bergen (UiB);0. Background information;institution;institution
+P05;;;0;Your institution:;select;National Infrastructures for Research and Technology (GRNET);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Institute of Information and Communication Technologies (IICT);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Institut Za Fiziku (IPB);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Ss. Cyril and Methodius University in Skopje (UKIM);0. Background information;institution;institution
+P05;;;0;Your institution:;select;ETaireia Eleytheroy Logismikoy AnoiktoyKodika (GFOSS);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Karslsruher Institut fuer Technologie (KIT);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Katholeike Universiteit Leuven (KUL);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Naturhistorisches Museum Wien (NHMW);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Open Access in the European Area through Scholarly Communication (OPERAS);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Instytut Chemii Bioorganicznej Polskiej Akademii Nauk (PSNC);0. Background information;institution;institution
+P05;;;0;Your institution:;select;32 Tampereen Korkeakoulusaatio Sr (TAU) Finland;0. Background information;institution;institution
+P05;;;0;Your institution:;select;Technische Universitaet Wien (TU-Wien);0. Background information;institution;institution
+P05;;;0;Your institution:;select;The University Of Edinburgh (UEDIN);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Goeteborgs Universitet (UGOT);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Chalmers Tekniska Hoegskola Ab (Chalmers);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Karolinska Institutet (KI);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Umea Universitet (UMU);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Tartu Ulikool (UT);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Tallinna Tehnikaulikool (TalTech);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Universite D'Aix Marseille (AMU);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Universidad Carlos III de Madrid (UC3M);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Norwegian Directorate For Higher Education And Skills (HK-Dir);0. Background information;institution;institution
+P05;;;0;Your institution:;select;Uninett Sigma2 As (SIGMA2);0. Background information;institution;institution
+P06;Other;P05;0;Your institution:;text;Please, specify your current institution;0. Background information;institution;institution
+P07;;;0;Your field of expertise:;select;Natural Sciences;0. Background information;field;field
+P07;;;0;Your field of expertise:;select;Engineering and technology;0. Background information;field;field
+P07;;;0;Your field of expertise:;select;Medical and Health Sciences;0. Background information;field;field
+P07;;;0;Your field of expertise:;select;Agricultural;0. Background information;field;field
+P07;;;0;Your field of expertise:;select;Social Sciences;0. Background information;field;field
+P07;;;0;Your field of expertise:;select;Humanities;0. Background information;field;field
+P07;;;0;Your field of expertise:;select;Other;0. Background information;field;field
+P08;Other;P06;0;Your field of expertise:;text;Your field of expertise;0. Background information;field;field
+P09;;;0;How familiar are you with the implementation of Quality Assurance processes in learning materials?;textSlider;Not familiar at all;0. Background information;previous QA experience;previous QA experience
+P09;;;0;How familiar are you with the implementation of Quality Assurance processes in learning materials?;textSlider;Not very familiar;0. Background information;previous QA experience;previous QA experience
+P09;;;0;How familiar are you with the implementation of Quality Assurance processes in learning materials?;textSlider;Somewhat familiar;0. Background information;previous QA experience;previous QA experience
+P09;;;0;How familiar are you with the implementation of Quality Assurance processes in learning materials?;textSlider;Familiar;0. Background information;previous QA experience;previous QA experience
+P09;;;0;How familiar are you with the implementation of Quality Assurance processes in learning materials?;textSlider;Very familiar;0. Background information;previous QA experience;previous QA experience

@@ -1,0 +1,51 @@
+﻿input_id;dependence_value;dependence;required;question;input_type;option;section;category;property
+Z01;;;0;Which of the following most accurately defines your current experience in developing learning/training materials?;mc;I regularly design learning materials;About you;About you;About you
+Z01;;;0;Which of the following most accurately defines your current experience in developing learning/training materials?;mc;I occasionally design learning materials;About you;About you;About you
+Z01;;;0;Which of the following most accurately defines your current experience in developing learning/training materials?;mc;I regularly give trainings;About you;About you;About you
+Z01;;;0;Which of the following most accurately defines your current experience in developing learning/training materials?;mc;I occasionally give trainings;About you;About you;About you
+Z01;;;0;Which of the following most accurately defines your current experience in developing learning/training materials?;mc;None of the above;About you;About you;About you
+Z02;;;0;How familiar are you with the implementation of Quality Assurance processes in learning materials?;textSlider;Not familiar at all;About you;About you;About you
+Z02;;;0;How familiar are you with the implementation of Quality Assurance processes in learning materials?;textSlider;Not very familiar;About you;About you;About you
+Z02;;;0;How familiar are you with the implementation of Quality Assurance processes in learning materials?;textSlider;Somewhat familiar;About you;About you;About you
+Z02;;;0;How familiar are you with the implementation of Quality Assurance processes in learning materials?;textSlider;Familiar;About you;About you;About you
+Z02;;;0;How familiar are you with the implementation of Quality Assurance processes in learning materials?;textSlider;Very familiar;About you;About you;About you
+Z03;;;0;How familiar are you with the implementation of FAIR data principles in learning materials?;textSlider;Not familiar at all;About you;About you;About you
+Z03;;;0;How familiar are you with the implementation of FAIR data principles in learning materials?;textSlider;Not very familiar;About you;About you;About you
+Z03;;;0;How familiar are you with the implementation of FAIR data principles in learning materials?;textSlider;Somewhat familiar;About you;About you;About you
+Z03;;;0;How familiar are you with the implementation of FAIR data principles in learning materials?;textSlider;Familiar;About you;About you;About you
+Z03;;;0;How familiar are you with the implementation of FAIR data principles in learning materials?;textSlider;Very familiar;About you;About you;About you
+Z04;;;0;How familiar are you with the implementation of Minimum Viable Skillsets in learning materials?;textSlider;Not familiar at all;About you;About you;About you
+Z04;;;0;How familiar are you with the implementation of Minimum Viable Skillsets in learning materials?;textSlider;Not very familiar;About you;About you;About you
+Z04;;;0;How familiar are you with the implementation of Minimum Viable Skillsets in learning materials?;textSlider;Somewhat familiar;About you;About you;About you
+Z04;;;0;How familiar are you with the implementation of Minimum Viable Skillsets in learning materials?;textSlider;Familiar;About you;About you;About you
+Z04;;;0;How familiar are you with the implementation of Minimum Viable Skillsets in learning materials?;textSlider;Very familiar;About you;About you;About you
+Z05;;;0;How familiar are you with the implementation of  Ethical, Legal, and Social Issues (ELSI) aspects in learning materials?;textSlider;Not familiar at all;About you;About you;About you
+Z05;;;0;How familiar are you with the implementation of  Ethical, Legal, and Social Issues (ELSI) aspects in learning materials?;textSlider;Not very familiar;About you;About you;About you
+Z05;;;0;How familiar are you with the implementation of  Ethical, Legal, and Social Issues (ELSI) aspects in learning materials?;textSlider;Somewhat familiar;About you;About you;About you
+Z05;;;0;How familiar are you with the implementation of  Ethical, Legal, and Social Issues (ELSI) aspects in learning materials?;textSlider;Familiar;About you;About you;About you
+Z05;;;0;How familiar are you with the implementation of  Ethical, Legal, and Social Issues (ELSI) aspects in learning materials?;textSlider;Very familiar;About you;About you;About you
+Z06;;;0;Have you assessed any learning materials using the S4E Quality Compass app?;select;No;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z06;;;0;Have you assessed any learning materials using the S4E Quality Compass app?;select;Yes;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z07;Yes;Z06;0;How was your experience applying it?;textSlider;Very dissatisfied;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z07;Yes;Z06;0;How was your experience applying it?;textSlider;Moderately dissatisfied;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z07;Yes;Z06;0;How was your experience applying it?;textSlider;Neither satisfied nor dissatisfied;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z07;Yes;Z06;0;How was your experience applying it?;textSlider;Moderately satisfied;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z07;Yes;Z06;0;How was your experience applying it?;textSlider;Very satisfied;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z08;;;0;Have you tried using the checklist as a quick glance shortcut to make sure the learning materials you are developing are complaint with the Skills4EOSC Quality Assurance Framework?;select;No;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z08;;;0; Have you tried using the checklist as a quick glance shortcut to make sure the learning materials you are developing are complaint with the Skills4EOSC Quality Assurance Framework?;select;Yes;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z09;Yes;Z08;0;How was your experience applying it?;textSlider;Very dissatisfied;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z09;Yes;Z08;0;How was your experience applying it?;textSlider;Moderately dissatisfied;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z09;Yes;Z08;0;How was your experience applying it?;textSlider;Neither satisfied nor dissatisfied;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z09;Yes;Z08;0;How was your experience applying it?;textSlider;Moderately satisfied;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z09;Yes;Z08;0;How was your experience applying it?;textSlider;Very satisfied;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z10;;;0;How likely is it that you will recommend the use of the Quality Assurance Framework for developing learning materials?;textSlider;Very unlikely;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z10;;;0;How likely is it that you will recommend the use of the Quality Assurance Framework for developing learning materials?;textSlider;Unlikely;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z10;;;0;How likely is it that you will recommend the use of the Quality Assurance Framework for developing learning materials?;textSlider;Neutral;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z10;;;0;How likely is it that you will recommend the use of the Quality Assurance Framework for developing learning materials?;textSlider;Likely;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z10;;;0;How likely is it that you will recommend the use of the Quality Assurance Framework for developing learning materials?;textSlider;Very likely;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z11;;;0;Are you going to try to use the Skills4EOSC Quality Assurance Framework next time you need to assess the quality of your learning materials?;textSlider;Strongly disagree;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z11;;;0;Are you going to try to use the Skills4EOSC Quality Assurance Framework next time you need to assess the quality of your learning materials?;textSlider;Disagree;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z11;;;0;Are you going to try to use the Skills4EOSC Quality Assurance Framework next time you need to assess the quality of your learning materials?;textSlider;Neither agree nor disagree;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z11;;;0;Are you going to try to use the Skills4EOSC Quality Assurance Framework next time you need to assess the quality of your learning materials?;textSlider;Agree;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z11;;;0;Are you going to try to use the Skills4EOSC Quality Assurance Framework next time you need to assess the quality of your learning materials?;textSlider;Strongly agree;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z12;;;0;Please, use this space to provide your comments or feedback that you may have about any aspect of the Skills4EOSC Quality Assurance Framework or its related tools:;text;;Help us;Help us;Help us

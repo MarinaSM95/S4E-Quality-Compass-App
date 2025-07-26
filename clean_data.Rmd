@@ -80,10 +80,6 @@ New variables that we need to create:
 
 ```{r}
 
-
-
-
-
 # CREATE COLUMNS
 # Changes to columns
 qa_data <- qa_data %>% 
@@ -102,9 +98,11 @@ qa_data <- qa_data %>%
     TRUE ~ "Yes;No" )) %>% 
   #Based on the values from "options", create a column input_type with "y/n" or "mc"
   dplyr::mutate(input_type= "mc") %>%
-  # create column required with TRUE when the indicator is minimal and FALSE ifelse
-  dplyr::mutate(required= case_when(minimal_detailed =="minimal"~ TRUE,
-                                    minimal_detailed !="minimal"~ FALSE))%>%
+  # Create required column (all questions are set to FALSE in this version)
+  dplyr::mutate(required= FALSE) %>%
+  # Previous version: Create column required with TRUE when the indicator is minimal and FALSE ifelse
+  #dplyr::mutate(required= case_when(minimal_detailed =="minimal"~ TRUE,
+  #                                  minimal_detailed !="minimal"~ FALSE))%>%
   # Create column page from column section
   dplyr::rename("pages"="section") %>% 
   select(!(starts_with("source")))
@@ -127,7 +125,8 @@ personal_data <- raw_data2 %>%
   dplyr::filter(!is.na(question)) %>%
   # Rename section column to pages
   dplyr::rename("pages"="section") %>% 
-  # Change values from 1 to TRUE for all questions
+  # Change required values from 1 to TRUE and 0 to FALSE for all questions 
+  # (in this version, all questions are set to false anyway)
   dplyr::mutate(required= case_when(required =="1"~ TRUE, required!="1"~ FALSE)) %>% 
   # Based on the values from "option" by group (duplicates of the same indicator),
   # create a column "options" (values separated by ";")
@@ -170,41 +169,96 @@ variable *section*. Moreover, we want it to be ordered in a certain way:
 - 1. Content & Structure
 - 2. Implementation
 - 3. Evaluation
-- 4. Compliance, Licencing & Ethics
+- 4. Licencing & Ethics
 
-Then, we need to group and nest the dataframe:
+Then, we need to order the dataframe by page and remove break lines in notes and
+bestpractices:
 
 ```{r}
 
+# Arrange order by page
 survey_clean <- survey_clean %>% 
-  
-  dplyr::arrange(match(property, my_order))
+  dplyr::arrange(pages)
 
-order_property <- c("Background information", "", )
-test <- survey_clean$property
-dplyr::arrange(pages) %>% 
-# Remove break lines
+# Arrange by property + page
+#order_property <- c("Background information", "", )
+#survey_clean <- survey_clean %>% 
+  
+#  dplyr::arrange(match(page, order_property))
+
+# Remove possible break lines to avoid errors
 survey_clean$notes <-str_replace_all(survey_clean$notes, '\\n', '')
+survey_clean$bestpractices <-str_replace_all(survey_clean$bestpractices, '\\n', '')
+
 # Check remaining line breaks
 #str_detect(survey_clean$notes, '\\n')
+# str_detect(survey_clean$bestpractices, '\\n')
+# If you run the lines above, you should get NA (when there are no notes) and/or FALSE
+# When there are notes but there are no breaklines
 
-  test
+
 ```
 
-In the documentation of the library, the multi-page option is explained for the case
-in which dependency happens between indicators within the same page. After checking
-this aspect, we noticed all dependent indicators happened to be grouped in the same
-page/section as their   in the same to check if dependency was respected even when the dependency was
-between two indicators from different pages
+
 ## Save dataset
 
 ```{r}
 
-write.csv2(survey_clean, ".//www/survey_data.csv")
+write.csv2(survey_clean, ".//www/self-assessment_clean.csv")
 
 
 ```
 
+
+## General feedback survey
+
+We repeat the same process for the general feedback survey. This survey asks users
+about their previous experience in quality assurance of learning materials, as well as
+their perception and opinion about the Skills4EOSC Quality Assurance in general and
+related tools.
+
+The structure of this dataset is very similar to the personal_data dataset (section 
+0. Background information), with questions duplicated by answers options.
+
+```{r}
+# Read csv file
+raw_generalfeedback <- read_csv2 (".//www/general_feedback.csv", col_names = TRUE, na= "" )
+
+general_feedback <- raw_generalfeedback %>% 
+  # Remove empty rows
+  dplyr::filter(!is.na(question)) %>%
+  # Rename section column to pages
+  dplyr::rename("pages"="section") %>% 
+  # Change required values from 1 to TRUE and 0 to FALSE for all questions 
+  # (in this version, all questions are set to false anyway)
+  dplyr::mutate(required= case_when(required =="1"~ TRUE, required!="1"~ FALSE)) %>% 
+  # Based on the values from "option" by group (duplicates of the same indicator),
+  # create a column "options" (values separated by ";")
+  group_by(input_id) %>% 
+  dplyr::reframe(options = stringr::str_c(option, collapse=";"), across()) %>% 
+  # delete duplicates
+  dplyr::distinct(input_id, .keep_all=TRUE) %>% 
+  # delete old column option
+  dplyr::select(-option)
+
+# Filter by correct input types, delete duplicates and create options column with
+#possible answers by question
+general_feedback <- general_feedback %>%
+  filter(input_type %in% c("mc", "text", "textSlider", "select")) %>%
+  distinct(input_id, .keep_all = TRUE) %>%
+  filter(!is.na(input_id), input_id != "") %>%
+  mutate(
+    options = ifelse(
+      is.na(options),
+      NA_character_,
+      gsub("\\s*;\\s*", ";", trimws(options))
+    )
+  )
+
+# Save dataset
+write.csv2(general_feedback, ".//www/general_feedback_clean.csv")
+
+```
 ## References
 
 - 
