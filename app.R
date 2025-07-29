@@ -242,7 +242,7 @@ ui <- dashboardPage(
     color: white;
   }
   
-#clickforassessment {
+#clickforassessment, #clickforsurvey {
   position: center;
   display: inline-flex;
   align-items: center;
@@ -264,7 +264,7 @@ ui <- dashboardPage(
   z-index: 1;
 }
 
-#clickforassessment::before {
+#clickforassessment::before, #clickforsurvey::before {
   content: '';
   position: absolute;
   top: -50%;
@@ -276,7 +276,7 @@ ui <- dashboardPage(
   z-index: -2;
 }
 
-#clickforassessment::after {
+#clickforassessment::after, #clickforsurvey::after {
   content: '';
   position: absolute;
   inset: 2px;
@@ -285,12 +285,12 @@ ui <- dashboardPage(
   z-index: -1;
 }
 
-#clickforassessment:hover {
+#clickforassessment:hover, #clickforsurvey:hover {
   transform: scale(1.05);
-  box-shadow: 0 0 40px rgba(149, 193, 31, 0.3);
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.3));
 }
 
-#clickforassessment:hover .arrow {
+#clickforassessment:hover .arrow, #clickforsurvey:hover .arrow {
   transform: translateX(6px);
 }
 
@@ -441,6 +441,44 @@ ui <- dashboardPage(
   border: none !important;
 }
 
+#next_page, #prev_page {
+  background-color: #3278B1;
+  margin-right: 10px;
+  margin-left: 10px;
+  justify: center !important;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 10px 24px;
+  font-weight: bold;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+
+}
+#next_page:hover,
+#prev_page:hover {
+  background-color: #255d89;
+  transform: scale(1.05);
+}
+
+#submit, #submit_general_feedback{
+  background-color: #95C11F;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 10px 24px;
+  font-weight: bold;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+
+}
+
+#submit:hover, #submit_general_feedback:hover{
+    background-color: #739518;
+    transform: scale(1.05);
+}
 "
 
 )),
@@ -566,12 +604,14 @@ ui <- dashboardPage(
                   width = 12,
                   height = "10%",
                   draggable = FALSE,
-                  fixed = TRUE,
-                  div(tags$br(),actionButton("clickforassessment", label ="Start Self-assessment Test"
-                                             ))
-                  
+                  fixed = TRUE
                     #actionButton(inputId = "m", label = "Proceed", icon = NULL)   ),  ## Conditional Panel for Approval   
-                  ))),
+                  )),
+              div(style = "width: 100%; text-align: center;",
+                  actionButton("clickforassessment", label = "Start Self-assessment Test")
+              )
+              
+              ),
               # Assessment shown when button is clicked
               conditionalPanel("input.clickforassessment == 1",
               tags$h2(style= "text-align: center; font-weight: bold; color: #3C8DBC;", "S4E Quality Self-assessment"),                 
@@ -705,12 +745,12 @@ ui <- dashboardPage(
                                    width = 12,
                                    height = "10%",
                                    draggable = FALSE,
-                                   fixed = TRUE,
-                                   div(tags$br(),
-                                       actionButton("clickforsurvey", 
-                                                              label ="Start General Feedback Survey"
+                                   fixed = TRUE)),
+                               div(style = "width: 100%; text-align: center;",
+                                   actionButton("clickforsurvey",
+                                                label ="Start General Feedback Survey"
                                    ))
-                                 ))),
+                                 ),
               conditionalPanel("input.clickforsurvey == 1",
                                tags$h2("General Feedback Survey"),                 
                                
@@ -961,6 +1001,7 @@ server <- function(input, output, session) {
     
     # Navigation buttons
     nav_buttons <- tagList(
+      div(
       textOutput("error_message"),
       tags$style("#error_message { color: red; font-weight: bold; margin-bottom: 1em; }"),
       if (which(pages == current_page()) > 1)
@@ -969,7 +1010,7 @@ server <- function(input, output, session) {
         actionButton("next_page", "Next"),
       if (which(pages == current_page()) == length(pages))
         actionButton("submit", "Submit")
-    )
+    ))
     
     runjs("Shiny.setInputValue('page_ui_ready', new Date().getTime());")
     
