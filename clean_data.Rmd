@@ -6,13 +6,24 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r libraries, results='hide'}
+library(knitr)
+library(readr)
+library(dplyr)
+library(plyr)
+library(tidyr)
+library(stringr)
+library(tidyverse)
 ```
 
 ## Introducing the dataset
 
 The dataset we will work on has been built by partners in T2.4 - "Learning materials
-quality assurance and certification framework" of the project Skills4EOSC (link), reviewed and published together with D2.7... (ADD LINK TO ZENODO) as one of the outputs from project. 
+quality assurance and certification framework" of the European project [Skills4EOSC](https://www.skills4eosc.eu/), reviewed and published together with [D2.7 Community-endorsed quality assurance and certification framework for professional
+training and qualifications - final version](https://zenodo.org/records/15731878) as one of the outputs from project. 
 
 The main dataset used to build the questionnaire includes the quality assurance (QA) indicators that will measure the compliance of open science
 courses and modules to the Skills4EOSC QA and Certification Framework. Moreover, a small
@@ -52,14 +63,6 @@ Therefore, no much pre-processing will be needed.
 - Read and clean raw data
 
 ```{r}
-# Libraries
-library(readr)
-library(dplyr)
-library(plyr)
-library(tidyr)
-library(stringr)
-library(tidyverse)
-
 
 raw_data1 <- read_csv2 (".//www/qa_data.csv", col_names = TRUE, na= "" )
 
@@ -91,10 +94,9 @@ qa_data <- qa_data %>%
   dplyr::mutate(options = case_when(
     input_id == "G15"  ~ "Yes;No;Not applicable",
     input_id == "M06"  ~ "Yes;No;Not applicable",
-    input_id == "M06"  ~ "Yes;No;Not applicable",
     input_id =="M07" ~ "Yes;No;Not applicable",
     input_id == "F07" ~ "Yes;No;Not applicable",
-    input_id == "E05" ~ "Yes;No;Not applicable",
+    input_id == "E04" ~ "Yes;No;Not applicable",
     TRUE ~ "Yes;No" )) %>% 
   #Based on the values from "options", create a column input_type with "y/n" or "mc"
   dplyr::mutate(input_type= "mc") %>%
@@ -113,8 +115,8 @@ qa_data <- qa_data %>%
 ### Personal data 
 
 For the dataset regarding personal data, we created the csv using the required variables,
-so no further changes are needed. We only need to read the dataset and then merged it with
-the previous one:
+so no great changes are needed. We only need to read the dataset, normalised it as the previous
+one and merge both:
 
 ```{r}
 # Read csv file
@@ -164,15 +166,22 @@ survey_clean <- survey %>%
 ## Multipage survey
 
 To structure the survey by page, we create a variable *page* coding the values from
-variable *section*. Moreover, we want it to be ordered in a certain way: 
-- 0. Personal Data
-- 1. Content & Structure
-- 2. Implementation
-- 3. Evaluation
-- 4. Licencing & Ethics
+variable *section*. 
+  - *Note: This is not actually needed since we are not using the shinysurvey library anymore.*
 
-Then, we need to order the dataframe by page and remove break lines in notes and
-bestpractices:
+Moreover, we want pages to be ordered in a certain way: 
+  - 0. Personal Data
+  - 1. Content & Structure
+  - 2. Implementation
+  - 3. Evaluation
+  - 4. Licencing & Ethics
+
+Then, we would need to order the dataframe by page, but in our case, to make sure
+questions are also ordered in a coherent way within the same page and keeping dependent
+questions close to their parent question, we need to order by property. By doing so, 
+questions will be also ordered by category and section/page. We also remove break lines
+in notes and bestpractices (otherwise, this may give you errors in the app when rendering).
+
 
 ```{r}
 
@@ -180,23 +189,41 @@ bestpractices:
 survey_clean <- survey_clean %>% 
   dplyr::arrange(pages)
 
-# Arrange by property + page
-#order_property <- c("Background information", "", )
-#survey_clean <- survey_clean %>% 
+property_order <- c("About you", "Title", "Authors", "Language",
+                    "Keywords", "Metadata", "Vocabularies",
+                    "Catalogue", "Repository", "Audience", "Expertise level", "Goal",
+                    "Objectives and outcomes", "Program", "Unit plan", "Logical unit",
+                    "Learning style", "Technology", "File formats", "Prerequisites",
+                    "Accessibility", "Trainer", "Instructor kit", "Timescale", "Delivery",
+                    "Costs", "Access rules", "Reused resources", "Open community", "Versioning",
+                    "Activities", "Grading", "Course certification", "Feedback", "Rating",
+                    "Learning experience quality", "Intellectual Property Rights (IPR)",
+                    "ToS and personal data", "Ethics Information")
+
+# Arrange by property (and consequently, by category and page)
+survey_clean <- survey_clean %>% 
   
-#  dplyr::arrange(match(page, order_property))
+  dplyr::arrange(match(property, property_order))
 
 # Remove possible break lines to avoid errors
 survey_clean$notes <-str_replace_all(survey_clean$notes, '\\n', '')
 survey_clean$bestpractices <-str_replace_all(survey_clean$bestpractices, '\\n', '')
+
 
 # Check remaining line breaks
 #str_detect(survey_clean$notes, '\\n')
 # str_detect(survey_clean$bestpractices, '\\n')
 # If you run the lines above, you should get NA (when there are no notes) and/or FALSE
 # When there are notes but there are no breaklines
+```
 
 
+This table represents the intended order and structure of the self-assessment test:
+
+```{r hierarchy qs table, echo=FALSE, results='asis'}
+table <- survey_clean %>% 
+  select(pages, category, property)
+kable(table, caption = "Organised Indicators Table")
 ```
 
 
@@ -242,9 +269,10 @@ general_feedback <- raw_generalfeedback %>%
   dplyr::select(-option)
 
 # Filter by correct input types, delete duplicates and create options column with
-#possible answers by question
+# possible answers by question
 general_feedback <- general_feedback %>%
   filter(input_type %in% c("mc", "text", "textSlider", "select")) %>%
+  # delete duplicates
   distinct(input_id, .keep_all = TRUE) %>%
   filter(!is.na(input_id), input_id != "") %>%
   mutate(
@@ -259,6 +287,8 @@ general_feedback <- general_feedback %>%
 write.csv2(general_feedback, ".//www/general_feedback_clean.csv")
 
 ```
+
+
 ## References
 
 - 

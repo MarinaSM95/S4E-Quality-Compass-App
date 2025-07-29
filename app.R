@@ -234,7 +234,7 @@ ui <- dashboardPage(
   justify-content: center;
   gap: 12px;
   padding: 14px 28px;
-  background: linear-gradient(145deg, #0f0f0f, #1c1c1c);
+  background: linear-gradient(145deg, #3278B1, #3278B1);
   border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 100px;
   color: #fff;
@@ -256,7 +256,7 @@ ui <- dashboardPage(
   left: -50%;
   width: 200%;
   height: 200%;
-  background: conic-gradient(from 0deg, #00ffff, #ff00ff, #00ffff);
+  background: conic-gradient(from 0deg, #E6007E, #3278B1, #95C11F, #E6007E);
   animation: rotate 4s linear infinite;
   z-index: -2;
 }
@@ -265,14 +265,14 @@ ui <- dashboardPage(
   content: '';
   position: absolute;
   inset: 2px;
-  background: #0a0a0a;
+  background: #3278B1;
   border-radius: inherit;
   z-index: -1;
 }
 
 #clickforassessment:hover {
   transform: scale(1.05);
-  box-shadow: 0 0 40px rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 40px rgba(149, 193, 31, 0.3);
 }
 
 #clickforassessment:hover .arrow {
@@ -283,7 +283,7 @@ ui <- dashboardPage(
   width: 22px;
   height: 22px;
   transition: transform 0.3s ease-in-out;
-  color: #00ffff;
+  color: white;
 }
 
 @keyframes rotate {
@@ -365,12 +365,10 @@ ui <- dashboardPage(
 }
 
 
-/* Optional: inactive sections text color darker for readability */
+/* Inactive sections text color darker for readability */
 .section-box:not(.active) {
   color: #525252;
 }
-
-
 
 #progress_container {
   margin-top: 10px;
@@ -385,16 +383,51 @@ ui <- dashboardPage(
   background-color: #337ab7;
   border-radius: 10px !important; 
 }
-#self-assessment {
-  border-radius: 12px !important;
-  overflow: hidden;
+
+
+
+
+#self-assessment .box-header {
+  display: none !important;
 }
+
 .flag-button {
   background: none;
   border: none;
   padding: 0;
   cursor: pointer;
-}"
+}
+
+.popover-title {
+  background-color: #3278B1 !important;
+  color: white !important;
+  font-weight: bold;
+}
+
+.popover-content {
+  background-color: #f9f9f9;
+  color: #333;
+}
+
+.modal-header {
+  background-color: #3278B1 !important;
+  color: white !important;
+  font-weight: bold;
+  border-bottom: none;
+}
+
+.modal-title {
+  color: white !important;
+} 
+
+#self-assessment.box {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+"
+
 )),
     
     tabItems(
@@ -526,7 +559,7 @@ ui <- dashboardPage(
                   ))),
               # Assessment shown when button is clicked
               conditionalPanel("input.clickforassessment == 1",
-              tags$h2("S4E Quality Self-assessment"),                 
+              tags$h2(style= "text-align: center; font-weight: bold; color: #3C8DBC;", "S4E Quality Self-assessment"),                 
               fluidRow (
                 
                   div(id="sections_select", style = "display: flex; justify-content: center; gap: 10px; height: 100%;",
@@ -539,7 +572,13 @@ ui <- dashboardPage(
               div(id = "section_theme_container",
                   uiOutput("progress_bar_ui"),
                   fluidRow(
-                    box(id = "self-assessment", width = 12, uiOutput("page_ui"))
+                    box(
+                      id = "self-assessment",
+                      width = 12,
+                      style = "background-color: transparent !important; box-shadow: none; border: none; padding: 0;",
+                      uiOutput("page_ui")
+                    )
+                    
                   )
               )
               )),
@@ -700,6 +739,8 @@ ui <- dashboardPage(
 ## SERVER
 
 server <- function(input, output, session) {
+  
+  
   pages <- unique(survey$pages)
   current_page <- reactiveVal(pages[1])
   
@@ -751,92 +792,153 @@ server <- function(input, output, session) {
   output$page_ui <- renderUI({
     page_data <- survey %>% filter(pages == current_page())
     visible_index <- 0
-    
-    header_row <- div(
-      style = "display: flex; align-items: center; gap: 12px; font-weight: bold; margin-bottom: 1em; padding-left: 2px;",
-      div(style = "min-width: 50px; text-align: center;", "Feedback"),
-      div(style = "width: 40px; text-align: center;", "Help notes"),
-      div(style = "flex: 1;", "Question")
+    categories <- unique(page_data$category)
+    section_colors <- c(
+      "0. Background information" = "#333333",
+      "1. Content & Structure" = "#F49200",
+      "2. Implementation" = "#95C11F",
+      "3. Evaluation" = "#3278B1",
+      "4. Licensing & Ethics" = "#E6007E"
     )
     
-    questions_ui <- lapply(1:nrow(page_data), function(i) {
-      row <- page_data[i, ]
-      qid <- row$input_id
-      inputId <- paste0("q_", qid)
+    
+    # Page Title box (remove the index at the beginning)
+    title_div <- tags$h3(
+      style = "margin-bottom: 1em; text-align: center; font-weight:bold;",
+      sub("^\\d+\\.\\s*", "", current_page())
+    )
+    
+    
+    # Loop over categories
+    category_boxes <- lapply(categories, function(cat) {
+      cat_data <- page_data %>% filter(category == cat)
       
-      show_question <- TRUE
-      if (!is.na(row$dependence) && nzchar(row$dependence)) {
-        parent_val <- input[[paste0("q_", row$dependence)]]
-        if (is.null(parent_val) || parent_val != row$dependence_value) {
-          show_question <- FALSE
+      # Rebuild the header row for each category box
+      header_row <- div(
+        style = "display: flex; flex-wrap: wrap; font-weight: bold; 
+              margin-bottom: 1em; gap: 1.2em; padding-left: 2px;",
+        div(style = "flex: 0 0 15%; min-width: 70px; text-align: center;", "Feedback"),
+        div(style = "flex: 0 0 15%; min-width: 70px; text-align: center;", "Help notes"),
+        div(style = "flex: 1; min-width: 200px;", "Question")
+      )
+      
+      # Questions within the category
+      question_ui <- lapply(seq_len(nrow(cat_data)), function(i) {
+        row <- cat_data[i, ]
+        qid <- row$input_id
+        inputId <- paste0("q_", qid)
+        
+        
+        show_question <- TRUE
+        if (!is.na(row$dependence) && nzchar(row$dependence)) {
+          parent_val <- input[[paste0("q_", row$dependence)]]
+          if (is.null(parent_val) || parent_val != row$dependence_value) {
+            show_question <- FALSE
+          }
         }
-      }
-      if (!show_question) return(NULL)
-      
-      visible_index <<- visible_index + 1
-      
-      asterisk <- if (isTRUE(row$required)) {
-        tags$span("*", style = "color:red; margin-left:5px;")
-      } else NULL
-      
-      label_question <- tags$b(tagList(paste0(visible_index, ". ", row$question), asterisk))
-      
-      help_icon <- if (!is.na(row$notes) && nzchar(row$notes)) {
-        shinyBS::bsButton(
-          inputId = paste0("help_icon_", qid),
+        if (!show_question) return(NULL)
+        
+        visible_index <<- visible_index + 1
+        
+        asterisk <- if (isTRUE(row$required)) {
+          tags$span("*", style = "color:red; margin-left:5px;")
+        } else NULL
+        
+        label_question <- tags$b(
+          tagList(paste0(visible_index, ". ", row$question), asterisk)
+        )
+        
+        help_icon <- if (!is.na(row$notes) && nzchar(row$notes)) {
+          shinyBS::bsButton(
+            inputId = paste0("help_icon_", qid),
+            label = NULL,
+            icon = icon("circle-info"),
+            style = "info",
+            size = "extra-small"
+          )
+        } else NULL
+        
+        choices <- if (row$input_type %in% c("mc", "select", "textSlider") && !is.na(row$options)) {
+          trimmed <- trimws(unlist(strsplit(row$options, ";")))
+          if (length(trimmed) == 0) NULL else trimmed
+        } else NULL
+        
+        has_feedback <- !is.null(feedback_store[[qid]])
+        flag_icon <- if (has_feedback) {
+          icon("flag", class = "fa-solid", style = "color:red;")
+        } else {
+          icon("flag", class = "fa-regular", style = "color:red;")
+        }
+        tooltip_title <- if (has_feedback) "Feedback submitted" else "Flag this question"
+        feedback_button <- actionButton(
+          inputId = paste0("flag_", qid),
           label = NULL,
-          icon = icon("circle-info"),
-          style = "info",
-          size = "extra-small"
+          icon = flag_icon,
+          style = "background: none; border: none;",
+          class = "pull-left",
+          title = tooltip_title
         )
-      } else NULL
-      
-      choices <- if (row$input_type %in% c("mc", "select", "textSlider") && !is.na(row$options)) {
-        trimmed <- trimws(unlist(strsplit(row$options, ";")))
-        if (length(trimmed) == 0) NULL else trimmed
-      } else NULL
-      
-      has_feedback <- !is.null(feedback_store[[qid]])
-      flag_icon <- if (has_feedback) {
-        icon("flag", class = "fa-solid", style = "color:red;")
+        
+        input_ui <- switch(
+          row$input_type,
+          "mc" = radioButtons(inputId = inputId, label = NULL, choices = choices,
+                              selected = isolate(input[[inputId]]) %||% character(0)),
+          "text" = textInput(inputId = inputId, label = NULL, value = isolate(input[[inputId]]) %||% ""),
+          "textSlider" = shinyWidgets::sliderTextInput(inputId = inputId, label = NULL,
+                                                       choices = choices, force_edges = TRUE),
+          "select" = selectInput(inputId = inputId, label = NULL, choices = choices,
+                                 selected = isolate(input[[inputId]]) %||% character(0)),
+          div(style = "color:red;", paste("Unsupported input_type:", row$input_type))
+        )
+        
+        # Question row layout
+        div(
+          style = "margin-bottom: 2em; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 1.2em;",
+          div(style = "flex: 0 0 15%; min-width: 70px; display: flex; justify-content: center;", feedback_button),
+          div(style = "flex: 0 0 15%; min-width: 70px; display: flex; align-items: center; justify-content: center;",
+              if (!is.null(help_icon)) help_icon else NULL),
+          div(style = "flex: 1; min-width: 200px;",
+              label_question,
+              div(style = "margin-top: 0.5em;", input_ui))
+        )
+      })
+      if (current_page() %in% names(section_colors)) {
+        section_color <- section_colors[[current_page()]]
       } else {
-        icon("flag", class = "fa-regular", style = "color:red;")
+        section_color <- "#3278B1"  # Fallback color (blue)
       }
-      tooltip_title <- if (has_feedback) "Feedback submitted" else "Flag this question"
-      feedback_button <- actionButton(
-        inputId = paste0("flag_", qid),
-        label = NULL,
-        icon = flag_icon,
-        style = "background: none; border: none;",
-        class = "pull-left",
-        title = tooltip_title
-      )
       
-      input_ui <- switch(
-        row$input_type,
-        "mc" = radioButtons(inputId = inputId, label = NULL, choices = choices,
-                            selected = isolate(input[[inputId]]) %||% character(0)),
-        "text" = textInput(inputId = inputId, label = NULL, value = isolate(input[[inputId]]) %||% ""),
-        "textSlider" = shinyWidgets::sliderTextInput(inputId = inputId, label = NULL,
-                                                     choices = choices, force_edges = TRUE),
-        "select" = selectInput(inputId = inputId, label = NULL, choices = choices,
-                               selected = isolate(input[[inputId]]) %||% character(0)),
-        div(style = "color:red;", paste("Unsupported input_type:", row$input_type))
-      )
       
-      div(
-        style = "margin-bottom: 1.5em; display: flex; align-items: flex-start; gap: 22px;",
-        div(style = "min-width: 50px;", feedback_button),
-        div(style = "width: 40px; display: flex; align-items: center; justify-content: center;",
-            if (!is.null(help_icon)) help_icon else NULL
-        ),
-        div(style = "flex: 1;",
-            label_question,
-            div(style = "margin-top: 0.5em;", input_ui)
+      tagList(
+        
+        box(
+          width = 12,
+          title = NULL,        # No header from being generated
+          solidHeader = FALSE, # No default box header styling
+          collapsible = FALSE,
+          style = "background-color: transparent; border: none; box-shadow: none; padding: 0;",
+          
+          # Custom category header outside the box
+          div(
+            style = paste0(
+              "background-color:", section_color, ";",
+              "color: white; font-weight: bold; font-size: 18px;",
+              "padding: 10px 15px; border-radius: 6px; margin-bottom: 0.5em;"
+            ),
+            cat
+          ),
+          
+          header_row,
+          do.call(tagList, question_ui)
         )
       )
+      
+      
+      
+      
     })
     
+    # Navigation buttons
     nav_buttons <- tagList(
       textOutput("error_message"),
       tags$style("#error_message { color: red; font-weight: bold; margin-bottom: 1em; }"),
@@ -845,19 +947,19 @@ server <- function(input, output, session) {
       if (which(pages == current_page()) < length(pages))
         actionButton("next_page", "Next"),
       if (which(pages == current_page()) == length(pages))
-        actionButton("submit", "Submit"),
-      tags$script("Shiny.setInputValue('page_ui_ready', Math.random());")
+        actionButton("submit", "Submit")
     )
     
-    box(
-      title = current_page(),
-      width = 12,
-      style = "border-radius: 12px;",
-      header_row,
-      do.call(tagList, questions_ui),
+    runjs("Shiny.setInputValue('page_ui_ready', new Date().getTime());")
+    
+    
+    tagList(
+      title_div,
+      category_boxes,
       nav_buttons
     )
   })
+  
   
   observeEvent(input$page_ui_ready, {
     page_data <- survey %>% filter(pages == current_page())
@@ -870,7 +972,7 @@ server <- function(input, output, session) {
           id = paste0("help_icon_", qid),
           title = "Note",
           content = row$notes,
-          placement = "right",
+          placement = "center",
           trigger = "click"
         )
       }
@@ -908,7 +1010,7 @@ server <- function(input, output, session) {
   ## PROGRESS BAR
   # Show only when it its not in page 1 (Background info)
   output$progress_bar_ui <- renderUI({
-    print(current_page()) 
+     
     if (current_page() != pages[1]) {
       
       tagList(
@@ -954,9 +1056,14 @@ server <- function(input, output, session) {
   # Feedback modals for all questions
   observe({
     lapply(survey$input_id, function(qid) {
+      question_text <- survey$question[survey$input_id == qid]
       observeEvent(input[[paste0("flag_", qid)]], {
         showModal(modalDialog(
-          title = paste("Feedback for question", qid),
+          title = div(
+            "Feedback to question:",
+            tags$div(style = "font-weight: normal; font-size: 90%; margin-top: 4px;", 
+                     tags$i(question_text))
+          ),
           textAreaInput(
             inputId = paste0("temp_feedback_", qid),
             label = "Provide your comment below:",
@@ -970,6 +1077,8 @@ server <- function(input, output, session) {
           ),
           easyClose = TRUE
         ))
+        
+        
       })
       
       observeEvent(input[[paste0("send_feedback_", qid)]], {
@@ -1312,12 +1421,14 @@ server <- function(input, output, session) {
           style = "border-radius: 12px;",
           questions
       )
+      
     })
     
     tagList(
       question_ui,
       actionButton("submit_general_feedback", "Submit Feedback", class = "btn-primary")
     )
+    
   })
   
   
