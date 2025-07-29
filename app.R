@@ -105,7 +105,22 @@ ui <- dashboardPage(
   ## BODY
   dashboardBody(
     useShinyjs(),
+    tags$head(tags$script(HTML("
+  $(document).on('change', 'input[type=checkbox]', function(e) {
+    var name = $(this).attr('name');
+    var checkboxes = $('input[name=' + name + ']');
+    
+    if (checkboxes.filter(':checked').length > 1) {
+      // Uncheck other boxes
+      checkboxes.not(this).prop('checked', false);
+      // Trigger input event so Shiny picks up the change
+      checkboxes.not(this).trigger('change');
+    }
+  });
+"))
+    ),
     tags$style(HTML("
+    
   /* Make header taller */
   .main-header {
     height: 70px !important;
@@ -781,10 +796,11 @@ server <- function(input, output, session) {
       
       if (isTRUE(row$required)) {
         val <- input[[input_id]]
-        if (is.null(val) || val == "") {
+        if (is.null(val) || length(val) == 0) {
           missing[[row$input_id]] <- row$question
         }
       }
+      
     }
     return(missing)
   }
@@ -881,8 +897,13 @@ server <- function(input, output, session) {
         
         input_ui <- switch(
           row$input_type,
-          "mc" = radioButtons(inputId = inputId, label = NULL, choices = choices,
-                              selected = isolate(input[[inputId]]) %||% character(0)),
+          "mc" = checkboxGroupInput(
+            inputId = inputId,
+            label = NULL,
+            choices = choices,
+            selected = isolate(input[[inputId]]) %||% character(0)
+          ),
+          
           "text" = textInput(inputId = inputId, label = NULL, value = isolate(input[[inputId]]) %||% ""),
           "textSlider" = shinyWidgets::sliderTextInput(inputId = inputId, label = NULL,
                                                        choices = choices, force_edges = TRUE),
@@ -1033,8 +1054,9 @@ server <- function(input, output, session) {
     total <- nrow(filtered)
     answered <- sum(sapply(filtered$input_id, function(id) {
       val <- input[[paste0("q_", id)]]
-      !is.null(val) && val != ""
+      !is.null(val) && length(val) > 0
     }))
+    
     percent <- round((answered / total) * 100)
     percent
   })
@@ -1208,12 +1230,13 @@ server <- function(input, output, session) {
     
     not_applicable <- sum(vapply(total_questions$input_id, function(id) {
       val <- input[[paste0("q_", id)]]
-      !is.null(val) && identical(val, "Not applicable")
+      !is.null(val) && length(val) == 1 && val[[1]] == "Not applicable"
     }, logical(1)))
     
     yes_answers <- sum(vapply(total_questions$input_id, function(id) {
       val <- input[[paste0("q_", id)]]
-      !is.null(val) && identical(val, "Yes")
+      !is.null(val) && length(val) == 1 && val[[1]] == "Yes"
+
     }, logical(1)))
     
     total <- nrow(total_questions) - not_applicable
@@ -1234,12 +1257,13 @@ server <- function(input, output, session) {
     
     not_applicable <- sum(vapply(minimal_questions$input_id, function(id) {
       val <- input[[paste0("q_", id)]]
-      !is.null(val) && identical(val, "Not applicable")
+      !is.null(val) && length(val) == 1 && val[[1]] == "Not applicable"
     }, logical(1)))
     
     yes_answers <- sum(vapply(minimal_questions$input_id, function(id) {
       val <- input[[paste0("q_", id)]]
-      !is.null(val) && identical(val, "Yes")
+      !is.null(val) && length(val) == 1 && val[[1]] == "Yes"
+
     }, logical(1)))
     
     total <- nrow(minimal_questions) - not_applicable
@@ -1259,12 +1283,13 @@ server <- function(input, output, session) {
     
     not_applicable <- sum(vapply(detailed_questions$input_id, function(id) {
       val <- input[[paste0("q_", id)]]
-      !is.null(val) && identical(val, "Not applicable")
+      !is.null(val) && length(val) == 1 && val[[1]] == "Not applicable"
     }, logical(1)))
     
     yes_answers <- sum(vapply(detailed_questions$input_id, function(id) {
       val <- input[[paste0("q_", id)]]
-      !is.null(val) && identical(val, "Yes")
+      !is.null(val) && length(val) == 1 && val[[1]] == "Yes"
+
     }, logical(1)))
     
     total <- nrow(detailed_questions) - not_applicable
