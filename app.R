@@ -219,15 +219,15 @@ ui <- dashboardPage(
     color: white;
   }
   
-  /* Self-assessment test page */
-  #introassessment{
+  /* Self-assessment and feedback survey intro pages */
+  #introassessment, #introsurvey {
     background-color: #d26f2d;
     color: white;
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2); 
     padding: 2em;
     border-radius: 12px;
   }
-  #introassessment .box-header{
+  #introassessment .box-header, #introsurvey .box-header{
      
     color: white;
   }
@@ -402,7 +402,7 @@ ui <- dashboardPage(
 
 
 
-#self-assessment .box-header {
+#self-assessment .box-header, #general-feedback .box-header {
   display: none !important;
 }
 
@@ -435,7 +435,8 @@ ui <- dashboardPage(
   color: white !important;
 } 
 
-#self-assessment.box {
+#self-assessment.box, #general-feedback,
+#general-feedck-container{
   background-color: transparent !important;
   box-shadow: none !important;
   border: none !important;
@@ -479,6 +480,14 @@ ui <- dashboardPage(
     background-color: #739518;
     transform: scale(1.05);
 }
+
+.tab-pane#shiny-tab-generalfeedback,
+#general-feedback-container,
+#general-feedback {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
 "
 
 )),
@@ -502,9 +511,7 @@ ui <- dashboardPage(
                      Assurance Framework. In our mission of ensuring quality in the full life-cycle
                      of training in Open Science, we have produced two main outputs that will guide you in taking your
                      learning resources to the next level."),
-                     tags$li("S4E Quality Compass"),
-                     tags$li("Skills4EOSC Checklist and Guide"),
-                     tags$br(),
+                     
                      tags$p("By following our guidelines, you will ensure the integration of the FAIR-by-design 
                      methodology, the Minimum Viable Skillsets, key Ethical and Legal aspects and other 
                      e-learning quality criteria in your Open Science course.")
@@ -540,7 +547,7 @@ ui <- dashboardPage(
                              tags$div( style="text-align: certer; color:#b8cce0;",
                                tags$h4("The S4E Quality Compass")),
                                tags$br(),
-                               tags$img(src = "clip_compass.gif",  
+                               tags$img(src = "gif_compass.gif",  
                                       style = "max-width: 100%; height: auto;"),
                              
                              tags$div(
@@ -595,7 +602,7 @@ ui <- dashboardPage(
                   receive your report and results regardless of providing personal 
                   information. Any information you decide to provide and your answers and
                   feedback will be store for research purposes and to keep improving
-                  the tool"), 
+                  the tool."), 
                   
                   top = 0,
                   left = 0,
@@ -752,14 +759,36 @@ ui <- dashboardPage(
                                    ))
                                  ),
               conditionalPanel("input.clickforsurvey == 1",
-                               tags$h2("General Feedback Survey"),                 
+                               tags$h3(style= "text-align: center; font-weight: bold; color: #3C8DBC;", "General Feedback survey" ),                 
                                
                                uiOutput("progress_bar2_ui"),
-                               
-                                   fluidRow(
-                                     box(id = "general-feedback", width = 12, uiOutput("feedback_ui"))
-                                   )
+                               fluidRow(id= "general-feedback-container",
+                                 box(
+                                   id = "general-feedback",
+                                   width = 12,
+                                   style = "background-color: transparent !important;
+                                   box-shadow: none; border: none; padding: 0;",
+                                   uiOutput("feedback_ui")
+                                 ))
+                               )
+      ),
+      
+      tabItem(tabName = "terms",
+              fluidRow(
+                box(title = "Terms of Service", width = 12,
+                    htmlOutput("terms_content"))
               )
+      ),
+      
+      tabItem(tabName = "privacy",
+              fluidRow(
+                box(title = "Privacy Policy", width = 12,
+                    htmlOutput("privacy_content"))
+              )
+      )
+      
+      
+      
       )),
     
     
@@ -784,16 +813,37 @@ ui <- dashboardPage(
                         height = "30px"),
                     img(src="logo_uc3m_pos_ext.png",  
                         title = "Carlos III University of Madrid", 
-                        height = "30px"),
+                        height = "30px")
                     )
     
   )
     
-))
+)
 
 ## SERVER
 
 server <- function(input, output, session) {
+  
+ ## TERMS OF SERVICE AND PROVICY POLICY 
+  # HTML docs rendering
+  
+  output$terms_content <- renderUI({
+    tags$iframe(
+      src = "./ToS.html",  
+      width = "100%",
+      height = "600px",
+      style = "border:none;"
+    )
+  })
+  
+  output$privacy_content <- renderUI({
+    tags$iframe(
+      src = "./Privacy-Policy.html",  
+      width = "100%",
+      height = "600px",
+      style = "border:none;"
+    )
+  })
   
   
   pages <- unique(survey$pages)
@@ -810,15 +860,23 @@ server <- function(input, output, session) {
   
   # Dinamic sidebar (hidden results tab until self-assessment is complete)
   output$dynamic_sidebar <- renderMenu({
-    sidebarMenu(id = "sidebarMenuid", selected="about",
+    sidebarMenu(id = "sidebarMenuid", selected = "about",
                 menuItem("About", tabName = "about", icon = icon("home")),
                 menuItem("Quality Self-assessment Test", tabName = "assessment", icon = icon("list-check")),
                 if (submission_complete()) {
                   menuItem("Results", tabName = "results", icon = icon("chart-bar"))
                 },
-                menuItem("General Feedback", tabName = "generalfeedback", icon = icon("comments"))
+                menuItem("General Feedback", tabName = "generalfeedback", icon = icon("comments")),
+                
+                ## --- Spacer and legal section ---
+                tags$hr(style = "border-top: 1px solid #999; margin: 20px 0;"),
+                
+                menuItem("Terms of Service", tabName = "terms", icon = icon("file-contract")),
+                menuItem("Privacy Policy", tabName = "privacy", icon = icon("user-shield"))
+                
     )
   })
+  
   
   check_required_inputs <- function(page_data, input) {
     missing <- list()
@@ -974,8 +1032,8 @@ server <- function(input, output, session) {
         
         box(
           width = 12,
-          title = NULL,        # No header from being generated
-          solidHeader = FALSE, # No default box header styling
+          title = NULL,        # No header 
+          solidHeader = FALSE, # No default box header s
           collapsible = FALSE,
           style = "background-color: transparent; border: none; box-shadow: none; padding: 0;",
           
@@ -1054,7 +1112,9 @@ server <- function(input, output, session) {
       idpage <- which(pages == current_page())
       if (idpage < length(pages)) {
         current_page(pages[idpage + 1])
-        runjs("window.scrollTo(0, 0);")
+        # Move to top after clicking on next (slow scroll)
+        runjs("window.scrollTo({ top: 0, behavior: 'smooth' });")
+        
       }
     }
   })
@@ -1063,8 +1123,9 @@ server <- function(input, output, session) {
     idpage <- which(pages == current_page())
     if (idpage > 1) {
       current_page(pages[idpage - 1])
-      # Move to top after clicking on previous
-      runjs("window.scrollTo(0, 0);")
+      # Move to top after clicking on previous (slow scroll)
+      runjs("window.scrollTo({ top: 0, behavior: 'smooth' });")
+      
     }
   })
   
@@ -1483,20 +1544,34 @@ server <- function(input, output, session) {
         }
       })
       
-      box(title = cat, solidHeader = TRUE, width = 12,
-          style = "border-radius: 12px;",
-          questions
+      tagList(
+        
+        box(
+          title = NULL,
+          solidHeader = FALSE,
+          width = 12,
+          style = "background-color: transparent !important; border: none; box-shadow: none;
+          ; border-radius: 6px;",
+          div(
+            style = paste0(
+              "background-color:#3278B1; color: white; font-weight: bold;
+              font-size: 18px; padding: 10px 15px; border-radius: 6px; margin-bottom: 0.5em; margin-top: 1em;"
+            ),
+            cat
+          ),
+          div(style= "background-color: transparent !important; margin-bottom: 2em; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 1.2em;", questions)
+        )
       )
-      
     })
     
     tagList(
       question_ui,
-      actionButton("submit_general_feedback", "Submit Feedback", class = "btn-primary")
+      tags$br(),
+      div(style = "text-align: center;",
+          actionButton("submit_general_feedback", "Submit Feedback")
+      )
     )
-    
   })
-  
   
   
   

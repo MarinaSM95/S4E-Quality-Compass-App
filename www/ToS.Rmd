@@ -1,0 +1,212 @@
+---
+title: "Terms of Service"
+author: 
+  - "Marina Sánchez Moreno"
+  - "Kasper Drazewski"
+date: "2025-07-30"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+ 
+```
+
+```{css, echo=FALSE}
+.title, .author, .date  { display: none; }
+h2{
+text-align: center; font-weight: bold; color: #3C8DBC;
+}
+h3{
+background-color: #3C8DBC;
+color: white; 
+font-weight: bold; font-size: 18px;
+padding: 10px 15px; border-radius: 6px; margin-bottom: 0.5em;
+}
+```
+
+
+
+<br>
+
+Version 0.9 <br>
+Last Updated: 30/07/2025 <br>
+
+These terms of service ("Terms") apply to your access and use of the S4E Quality 
+Compass App (the "Service"). Please read them carefully. 
+
+### Service Provider 
+The S4E Quality Compass app is operated and maintained by: 
+Universidad Carlos III de Madrid (UC3M) 
+Calle Madrid, 126 
+28903 Getafe, Madrid, Spain 
+Website: [https://www.uc3m.es](https://www.uc3m.es)
+
+UC3M acts as the hosting and service provider for the S4E Quality Compass app within 
+the framework of the Skills4EOSC project, funded under Horizon Europe. 
+
+
+### Accepting these Terms 
+
+If you access or use the Service, it means you agree to be bound by all of the terms 
+below. So, before you use the Service, please read all of the terms. If you don't agree to 
+all of the terms below, please do not use the Service. Also, if a term does not make 
+sense to you, please let us know by e-mailing [marinasa@pa.uc3m.es](mailto:marinasa@pa.uc3m.es). 
+
+
+### Changes to these Terms 
+
+We reserve the right to modify these Terms at any time. For instance, we may need to 
+change these Terms if we come out with a new feature or for some other reason. 
+Whenever we make changes to these Terms, the changes are effective once we post 
+such revised Terms (indicated by revising the date and version at the top of these 
+Terms). It is your responsibility to check the Service for changes to these Terms. Any 
+significant changes to these Terms will be flagged to registered users via e-mail. 
+If you continue to use the Service after the revised Terms go into effect, then you have 
+accepted the changes to these Terms. 
+
+
+### Privacy Policy
+
+For information about how we collect and use information about users of the Service, 
+please check out our privacy policy. 
+
+
+### Third-Party Services
+
+From time to time, we may provide you with links to third party websites or services that 
+we do not own or control. Your use of the Service may also include the use of 
+applications that are developed or owned by a third party. Your use of such third-party 
+applications, websites, and services is governed by that party's own terms of service or 
+privacy policies. We encourage you to read the terms and conditions and privacy policy 
+of any third-party application, website or service that you visit or use. 
+
+
+### Creating Accounts 
+
+When you create an account or use another service to log in to the Service, you agree 
+to maintain the security of your password and accept all risks of unauthorized access to 
+any data or other information you provide to the Service. 
+
+If you discover or suspect any Service security breaches, please let us know as soon as 
+possible. 
+
+
+### Your Content & Conduct 
+
+Our Service allows you and other users to post, link and otherwise make available 
+content. You are responsible for the content that you make available to the Service, 
+including its legality, reliability, and appropriateness. 
+
+When you post, link or otherwise make available content to the Service, you grant us 
+the right and license to use, reproduce, modify, publicly perform, publicly display and 
+distribute your content on or through the Service. We may format your content for 
+display throughout the Service, but we will not edit or revise the substance of your 
+content itself. 
+
+Aside from our limited right to your content, you retain all of your rights to the content 
+you post, link and otherwise make available on or through the Service. 
+You can remove the content that you posted by deleting it. Once you delete your 
+content, it will not appear on the Service, but copies of your deleted content may remain 
+in our system or backups for some period of time. We cannot guarantee we will retain 
+web server access logs for longer than three years before deleting them. 
+
+You may not post, link and otherwise make available on or through the Service any of 
+the following: 
+
+  - Content that is libelous, defamatory, bigoted, fraudulent or deceptive; 
+  - Content that is illegal or unlawful, that would otherwise create liability; 
+  - Content that may infringe or violate any patent, trademark, trade secret, 
+copyright, right of privacy, right of publicity or other intellectual or other right of 
+any party; 
+  - Mass or repeated promotions, political campaigning or commercial messages 
+directed at users who do not follow you (SPAM); 
+  - Private information of any third party (e.g., addresses, phone numbers, email 
+addresses, Social Security numbers and credit card numbers); and 
+  - Viruses, corrupted data or other harmful, disruptive or destructive files or code. 
+  
+Also, you agree that you will not do any of the following in connection with the Service 
+or other users: 
+
+  - Use the Service in any manner that could interfere with, disrupt, negatively affect 
+or inhibit other users from fully enjoying the Service or that could damage, 
+disable, overburden or impair the functioning of the Service; 
+  - Impersonate or post on behalf of any person or entity or otherwise misrepresent 
+your affiliation with a person or entity; 
+  - Collect any personal information about other users, or intimidate, threaten, stalk 
+or otherwise harass other users of the Service; 
+  - Create an account or post any content if you are not over 13 years of age years 
+of age; and 
+  - Circumvent or attempt to circumvent any filtering, security measures, rate limits 
+or other features designed to protect the Service, users of the Service, or third 
+parties. 
+
+
+### Materials and copyright 
+
+Unless explicitly stated otherwise, all designs, text, graphics, pictures, information and 
+other content (excluding your content) displayed within this Service is owned by their 
+respective authors and licensed under Creative Commons Attribution (CC-BY) 4.0 
+International licence. The link to the licence is displayed permanently[here] (https://github.com/MarinaSM95/S4E-Quality-Compass-App). By using the 
+Service, you accept that your use of any of the materials displayed within the Service 
+will respect the applicable licence terms. If you fail to respect that, e.g. by reposting 
+some of our content without proper attribution, we may terminate your use of the 
+Service. 
+
+
+### Disclaimers  
+
+We are not responsible for any third-party websites accessible by hyperlink from the 
+Service, or websites linking to the Service. When you leave the Service, you should be 
+aware that these Terms and our policies no longer govern. 
+
+The content available within the Service is an effect of bona fide collaboration and a lot 
+of effort is being put into keeping it error-free, reliable and up-to-date. This 
+notwithstanding, we make no representations, warranties, or guarantees relating to the 
+quality, suitability, truth, accuracy or completeness of any content contained in the 
+Service. You acknowledge sole responsibility for and assume all risk arising from your 
+use of or reliance on any content. 
+
+While we strive to ensure the continuous availability and quality of the Service, we 
+cannot make any guarantees concerning its continued uptime, availability in your 
+vicinity, or the quality of your experience. We accept no responsibility for any harms or 
+damages to you or others resulting from your use or lack of use of the Service in any 
+context. 
+
+
+### Governing Law and Jurisdiction 
+
+The validity of these Terms and the rights, obligations, and relations of the parties under 
+these Terms will be construed in accordance with Spanish law. Any disputes will be 
+resolved by the competent court of law. 
+
+
+### Termination 
+
+If you breach any of these Terms, we have the right to suspend or disable your access 
+to or use of the Service. 
+
+
+### Attribution 
+
+This Terms of Service document has been drafted for our Service using the tools and templates 
+by App.net and made available at https://github.com/appdotnet/template-terms-of
+service/blob/master/privacy_template.md under a Creative Commons Attribution-Share Alike 
+(CC-BY-SA) 3.0 licence which also applies to the text of this document. 
+
+
+### Entire Agreement 
+
+These Terms constitute the entire agreement between you and the Service Provider 
+regarding the use of the Service, superseding any prior agreements in this respect.
+
+<br>
+<br>
+<br>
