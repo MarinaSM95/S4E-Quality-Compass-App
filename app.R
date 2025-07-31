@@ -645,8 +645,74 @@ ui <- dashboardPage(
               )
               )),
       tabItem(tabName = "results",
+              tags$h2(style= "text-align: center; font-weight: bold; color: #3C8DBC;",
+                      "Your Course Quality Report"),
               conditionalPanel(
                 condition = "output.show_results",
+                fluidRow(
+                  box(title = "Total Score",
+                      width = 12,
+                      status = "primary",
+                      solidHeader = TRUE,
+                      valueBoxOutput("score_total"),
+                      valueBoxOutput("score_minimal"),
+                      valueBoxOutput("score_detailed")),
+                ),
+                
+                fluidRow(
+                  tabBox(title= "Your score in detail",
+                         id="score_detail",
+                         side = "right",
+                         width = 12,
+                         tabPanel(id="score1", "Score by section",
+                                  fluidRow(box(solidHeader = TRUE,
+                                      background = NULL,
+                                      width = 6,
+                                      # centered valueBoxes
+                                      style = "border-color: #F49200; border-radius: 12px;",
+                                      
+                                      title= "Content & Structure",
+                                      valueBoxOutput("score_content_minimal"),
+                                      valueBoxOutput("score_content_detailed")
+                                  ),
+                                  box(title= "Implementation",
+                                      width = 6,
+                                      solidHeader = TRUE,
+                                      background = NULL,
+                                      style = "border-color: #95C11F; border-radius: 12px; padding:5px;",
+                                      valueBoxOutput("score_implementation_minimal"),
+                                      valueBoxOutput("score_implementation_detailed")
+                                  )),
+                                  fluidRow(
+                                  box(title="Evaluation", 
+                                      width = 6,
+                                      solidHeader = TRUE,
+                                      background = NULL,
+                                      style = "border-color: #3278B1; border-radius: 12px;",
+                                      valueBoxOutput("score_evaluation_minimal"),
+                                      valueBoxOutput("score_evaluation_detailed")                     
+                                  ),
+                                  box(title = "Licensing & Ethics",
+                                      solidHeader = TRUE,
+                                      width = 6,
+                                      background = NULL,
+                                      style = "border-color: #E6007E; border-radius: 12px;",
+                                      valueBoxOutput("score_ethics_minimal"),
+                                      valueBoxOutput("score_ethics_detailed")
+                                  ))
+                                  ),
+                         tabPanel (id="score2", "Score by sub-framework"),
+                         tabPanel (id="score3", "Visualizing your score")
+                      )),
+
+                fluidRow(
+                  box(title = "How Can You Improve the Quality of Your Course?",
+                      width = 12,
+                      status = "primary",
+                      solidHeader = TRUE,
+                      DT::dataTableOutput("Best_practices")
+                  )
+                ),
                 fluidRow(
                   box(
                     title = "Your Answers",
@@ -654,59 +720,6 @@ ui <- dashboardPage(
                     status = "primary",
                     solidHeader = TRUE,
                     DT::dataTableOutput("results_table")
-                  )
-                ),
-                fluidRow(
-                  tags$h3("Your Score"),
-                  valueBoxOutput("score_total"),
-                  valueBoxOutput("score_minimal"),
-                  valueBoxOutput("score_detailed")
-                ),
-                
-                fluidRow(
-                  tags$h3("Score by section"),
-                  box(solidHeader = TRUE,
-                      background = NULL,
-                      width = 6,
-                      # centered valueBoxes
-                      style = "border-color: #F49200; border-radius: 12px;",
-                      
-                      title= "Content & Structure",
-                      valueBoxOutput("score_content_minimal"),
-                      valueBoxOutput("score_content_detailed")
-                      ),
-                  box(title= "Implementation",
-                      width = 6,
-                      solidHeader = TRUE,
-                      background = NULL,
-                      style = "border-color: #95C11F; border-radius: 12px; padding:5px;",
-                      valueBoxOutput("score_implementation_minimal"),
-                      valueBoxOutput("score_implementation_detailed")
-                      )),
-                fluidRow(
-                  box(title="Evaluation", 
-                      width = 6,
-                      solidHeader = TRUE,
-                      background = NULL,
-                      style = "border-color: #3278B1; border-radius: 12px;",
-                      valueBoxOutput("score_evaluation_minimal"),
-                      valueBoxOutput("score_evaluation_detailed")                     
-                      ),
-                  box(title = "Licensing & Ethics",
-                      solidHeader = TRUE,
-                      width = 6,
-                      background = NULL,
-                      style = "border-color: #E6007E; border-radius: 12px;",
-                      valueBoxOutput("score_ethics_minimal"),
-                      valueBoxOutput("score_ethics_detailed")
-                      )
-                  ),
-
-                fluidRow(
-                  box(title = "How Can You Improve the Quality of Your Course?",
-                      width = 12,
-                      tags$h4("Best Practices"),
-                      DT::dataTableOutput("Best_practices")
                   )
                 )
               )),
@@ -952,7 +965,7 @@ server <- function(input, output, session) {
         }
         if (!show_question) return(NULL)
         
-        visible_index <<- visible_index + 1
+        visible_index <- visible_index + 1
         
         asterisk <- if (isTRUE(row$required)) {
           tags$span("*", style = "color:red; margin-left:5px;")
@@ -1279,8 +1292,8 @@ server <- function(input, output, session) {
         DT::datatable(results_df, 
                       extensions = 'Buttons',
                       options = list(
-                        dom = 'Bfrtip',
-                        buttons = c('csv', 'pdf'),
+                        dom = "Bfrtip",
+                        buttons = c("copy", "csv", "excel", "pdf", "print"),
                         pageLength = 10,
                         rowCallback = JS(
                           "function(row, data, index) {",
@@ -1412,8 +1425,6 @@ server <- function(input, output, session) {
     section_df <- df %>%
       filter(Page == section, Level == level)
     
-    cat("Debug — Section:", section, "Level:", level, "→", nrow(section_df), "rows\n")
-    
     not_applicable <- sum(section_df$Answer == "Not applicable")
     yes_answers <- sum(section_df$Answer == "Yes")
     total <- nrow(section_df) - not_applicable
@@ -1485,7 +1496,9 @@ server <- function(input, output, session) {
     merged <- user_results() %>%
       left_join(
         survey %>% select(question, input_id, bestpractices, pages),
-        by = c("Question" = "question")
+        by = c("Question" = "question"),
+        # At least two rows are duplicated (Background Info) by question (different id)
+        relationship = "many-to-many"
       )
     
     # Filter to keep only relevant rows
@@ -1501,8 +1514,8 @@ server <- function(input, output, session) {
     DT::datatable(
       filtered,
       options = list(
-        dom = 'Bfrtip',
-        buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+        dom = "Bfrtip",
+        buttons = c("copy", "csv", "excel", "pdf", "print"),
         pageLength = 10
       ),
       extensions = 'Buttons',
