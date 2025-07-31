@@ -702,7 +702,8 @@ ui <- dashboardPage(
                                   ))
                                   ),
                          tabPanel (id="score2", "Score by sub-framework"),
-                         tabPanel (id="score3", "Visualizing your score")
+                         tabPanel (id="score3", "Visualizing your score",
+                                   plotOutput("score_plot"))
                       )),
 
                 fluidRow(
@@ -1433,7 +1434,7 @@ server <- function(input, output, session) {
   }
   
   
-  
+ 
   #SCORE BY SECTION
   # Rendering each valuebox
   # Section: Content & Structure
@@ -1522,6 +1523,82 @@ server <- function(input, output, session) {
       rownames = FALSE
     )
   })
+  
+  
+  ## SCORE PLOT
+  output$score_plot <- renderPlot({
+    req(user_results())
+    
+    df <- user_results() %>%
+      filter(Page != "0. Background information") %>%
+      left_join(survey %>% select(question, subframework, pages), by = c("Question" = "question")) %>%
+      mutate(
+        Framework = toupper(subframework),
+        SECTION = stringr::str_wrap(pages, 20),
+        LevelT = if_else(Level == "detailed", "b", "a"),
+        Answer = as.character(ifelse(is.na(Answer), "-1", Answer))  # ← force to character
+      ) %>%
+      bind_rows(
+        tibble(Framework = "et", Level = "zzz", SECTION = "D", Answer = "20"),
+        tibble(Framework = "et", Level = "zzz", SECTION = "D", Answer = "20"),
+        tibble(Framework = "em", Level = "kkk", SECTION = "Comz", Answer = "20"),
+        tibble(Framework = "em", Level = "kkk", SECTION = "Comz", Answer = "20"),
+        tibble(Framework = "fb", Level = "aaa", SECTION = "F", Answer = "20"),
+        tibble(Framework = "fb", Level = "aaa", SECTION = "F", Answer = "20"),
+        tibble(Framework = "et", Level = "zzz", SECTION = "D", Answer = "20"),
+        tibble(Framework = "et", Level = "zzz", SECTION = "D", Answer = "20"),
+        tibble(Framework = "em", Level = "kkk", SECTION = "Comz", Answer = "20"),
+        tibble(Framework = "em", Level = "kkk", SECTION = "Comz", Answer = "20"),
+        tibble(Framework = "fb", Level = "aaa", SECTION = "F", Answer = "20"),
+        tibble(Framework = "fb", Level = "aaa", SECTION = "F", Answer = "20")
+      ) %>%
+      mutate(
+        color = if_else(Level %in% c("aaa", "kkk", "zzz"), "#ffffff00", "black"),
+        alpha = if_else(Level %in% c("aaa", "kkk", "zzz"), 0, 0.7)
+      )
+    
+    library(ggalluvial)
+    ggplot(df) + theme_void() + scale_color_identity() + scale_alpha_identity() +
+      
+      scale_fill_manual(
+        values = c(
+          "Yes" = "darkgreen",
+          "No" = "darkred",
+          "Not applicable" = "lightblue",
+          "-1" = "grey",      # for NAs or missing
+          "20" = "#ffffff00"       # for your spacer rows
+        )
+      )+
+    
+      aes(
+        axis1 = interaction(Answer, Level),
+        axis2 = interaction(Answer, Level, Framework),
+        axis3 = interaction(Answer, Level, SECTION)
+      ) +
+      geom_flow(aes(fill = factor(Answer)), show.legend = FALSE, alpha = 0.25) +
+      geom_lode(aes(fill = factor(Answer), alpha = alpha), show.legend = FALSE) +
+      geom_text(aes(label = after_stat(n), color = color), stat = "stratum") +
+      geom_stratum(
+        aes(axis1 = interaction(Level),
+            axis2 = interaction(Level, Framework),
+            axis3 = interaction(Level, SECTION),
+            color = color, linetype = LevelT),
+        fill = NA, show.legend = FALSE
+      ) +
+      geom_text(
+        aes(axis1 = Level, axis2 = Framework, axis3 = SECTION, color = color,
+            label = after_stat(stratum), y = after_stat(2 * y - ymin) + 1.5
+),
+        stat = "stratum", vjust = 0, lineheight = .8  ) +
+      annotate("text", x = 1:3, y = 72,
+               label = c("Total", "By Framework", "By Section"),
+               size = 5, fontface = "bold")
+    
+  })
+  
+  
+  
+  
   
   ## GENERAL FEEDBACK SURVEY
   output$feedback_ui <- renderUI({
