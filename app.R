@@ -810,27 +810,45 @@ ui <- dashboardPage(
 
   footer= dashboardFooter(
     left= tags$div(style= "font-size: 10px; padding:5px; padding-top:10px;position:relative;", 
-                   tags$p("Except where otherwise noted, content on this site is licensed 
-                            under a Creative Commons Attribution 4.0 
-                            International License.  Sanchez-Moreno, Marina.
-                            (2025). S4E Quality Compass app (1.0.0).")),
+                   p("Except where otherwise noted, content on this site is licensed 
+                            under a", style= "display:inline;"),
+                   a(href= "https://creativecommons.org/licenses/by/4.0/", "Creative Commons Attribution 4.0 
+                            International License"),
+                   a(href= "https://creativecommons.org/licenses/by/4.0/", 
+                     tags$img(src="cc-by.png", title = "CC-by 4.0 License",
+                              height = "15px")),
+                   p(". Sanchez-Moreno, Marina",style= "display:inline;"),
+                   a(href = "https://orcid.org/0000-0003-2148-2494",
+                   tags$img(src = "orcid_logo.png",
+                            title = "Orcid profile",
+                            height = "15px"
+                            )),
+                  p(".(2025). S4E Quality Compass app (1.0.0).", style= "display:inline;")),
 
-    right= tags$div(style="padding:8px; margin-top: 0px; position:relative;",
-                    img(src="logo_S4E_pos_ext.png",  
-                        title = "Skills4EOSC project", 
-                        height = "30px"),
-                    img(src="logo_eosc_ext.jpeg",  
-                        title = "Skills4EOSC website", 
-                        height = "30px"),
-                    img(src="logo_eu_trans.png",  
-                        title = "Co-funded by the European Union", 
-                        height = "30px"),
-                    img(src="logo_uc3m_pos_ext.png",  
-                        title = "Carlos III University of Madrid", 
-                        height = "30px")
+    right= tags$div(style="padding:8px; margin-top: 0px; position:relative; z-index:10; pointer-events:auto;",
+                    # Important! Set pointer-events:auto; otherwise images links don't work
+                    a(href = "https://www.skills4eosc.eu/",
+                      tags$img(src="logo_S4E_pos_ext.png",  
+                               title = "Skills4EOSC project", 
+                               height = "30px")
+                      ),
+                    a(href = "https://eosc.eu/",
+                      tags$img(src="logo_eosc_ext.jpeg",  
+                               title = "EOSC Association", 
+                               height = "30px")
+                    ),
+                    a(href = "https://ec.europa.eu/regional_policy/home_en",
+                      tags$img(src="logo_eu_trans.png",  
+                               title = "Co-funded by the European Union", 
+                               height = "30px")
+                    ),
+                    a(href = "https://www.uc3m.es/home",
+                      tags$img(src="logo_uc3m_pos_ext.png",  
+                               title = "Carlos III University of Madrid", 
+                               height = "30px")
                     )
     
-  )
+  ))
     
 )
 
