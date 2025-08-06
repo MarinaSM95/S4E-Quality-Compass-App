@@ -606,21 +606,22 @@ body, .wrapper, .content-wrapper, .right-side {
                   title = tags$b("Self-assessment test"),
                   tags$p("The Skills4EOSC Quality self-assessment
                   test covers all indicators from the Skills4EOSC Quality
-                  Assurance Framework. You will navigate through 5 sections: Background
+                  Assurance Framework. During the test, you will navigate through 5 sections: Background
                   Information, Content and Structure, Implementation, Evaluation and
                   Licensing and Ethics. In addition to answering the questions, 
-                  we encourage you to provide any comments or doubts regarding the questions.
+                  we encourage you to provide any comments or doubts you may have about a question.
                   Just click on the flag next to each question, write your comments and send them."),
-                  tags$p("After answering some those questions, you
-                  will get a report on your course compliance with the framework. 
-                  This report provides your scores by section and recommendations on
+                  tags$p("After submitting your answers, you
+                  will get a report on your course compliance with our quality framework. 
+                  This report provides your scores by section and by subframework and recommendations on
                   how to improve your learning materials."),
                   tags$p("Regarding personal data collection, you don't need to provide
                   any personal information you don't wish to be stored. You will still
                   receive your report and results regardless of providing personal 
-                  information. Any information you decide to provide and your answers and
+                  information. Any information you decide to provide together with and your answers and
                   feedback will be store for research purposes and to keep improving
-                  the tool."), 
+                  the tool. For more information about this, visit our Privacy Policy page 
+                         in the sidebar menu"), 
                   
                   top = 0,
                   left = 0,
@@ -1002,14 +1003,17 @@ server <- function(input, output, session) {
         }
         if (!show_question) return(NULL)
         
-        visible_index <- visible_index + 1
+        # <<- operator increments visible_index globally within the page, not by category
+        visible_index <<- visible_index + 1
         
         asterisk <- if (isTRUE(row$required)) {
           tags$span("*", style = "color:red; margin-left:5px;")
         } else NULL
         
         label_question <- tags$b(
-          tagList(paste0(visible_index, ". ", row$question), asterisk)
+          # Put numeration, question text and asterisk (not displayed, no required questions)
+          # By adding HTML(), we render the links (in MVS related questions) 
+          tagList(HTML(paste0(visible_index, ". ", row$question)), asterisk)
         )
         
         help_icon <- if (!is.na(row$notes) && nzchar(row$notes)) {
@@ -1141,7 +1145,7 @@ server <- function(input, output, session) {
           session,
           id = paste0("help_icon_", qid),
           title = "Note",
-          content = row$notes,
+          content = HTML(row$notes),
           placement = "center",
           trigger = "click"
         )
@@ -1326,8 +1330,11 @@ server <- function(input, output, session) {
       user_results(results_df)
       
       output$results_table <- DT::renderDataTable({
+        # Render links in question column
+        results_df$Question <- lapply(results_df$Question, HTML)
         DT::datatable(results_df, 
                       extensions = 'Buttons',
+                      escape=FALSE,
                       options = list(
                         dom = "Bfrtip",
                         buttons = c("copy", "csv", "excel", "pdf", "print"),
@@ -1545,11 +1552,14 @@ server <- function(input, output, session) {
         Answer %in% c("No", "No answer"),
         !is.na(bestpractices) & bestpractices != ""
       ) %>%
-      select(Question, Level, Answer, `Best Practice` = bestpractices)
+      # Render links in best practices
+      mutate(`Best Practice` = lapply(bestpractices, HTML)) %>%  
+      select(Question, Level, Answer, `Best Practice`)
     
     # Create interactive datatable with export options
     DT::datatable(
       filtered,
+      escape=FALSE,
       options = list(
         dom = "Bfrtip",
         buttons = c("copy", "csv", "excel", "pdf", "print"),

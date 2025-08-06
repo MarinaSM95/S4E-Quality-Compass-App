@@ -25,36 +25,56 @@ The dataset we will work on has been built by partners in T2.4 - "Learning mater
 quality assurance and certification framework" of the European project [Skills4EOSC](https://www.skills4eosc.eu/), reviewed and published together with [D2.7 Community-endorsed quality assurance and certification framework for professional
 training and qualifications - final version](https://zenodo.org/records/15731878) as one of the outputs from project. 
 
-The main dataset used to build the questionnaire includes the quality assurance (QA) indicators that will measure the compliance of open science
-courses and modules to the Skills4EOSC QA and Certification Framework. Moreover, a small
-set of questions was added to collect relevant information about the user for future
-analysis on responses and feedback to improve the app.
+The main dataset used to build the questionnaire includes the quality assurance (QA) 
+indicators that will measure the compliance of open science courses and modules to 
+the Skills4EOSC QA and Certification Framework. Moreover, a small set of questions 
+was added to collect relevant information about the user for future analysis on 
+responses and feedback to improve the app.
 
 The first dataset (Quality Assurance questions) contains the following information:
 
   - *id_ind*:	unique identification number for each indicator, regardless their section
   of category. Letter of subframework followed by a number
-  - *dependence*:	It provides the id of the indicator it is subordinated to. It determines whether
-  an indicator is subordinated to another indicator's response. It reduces redundant or unecessary
-  questions. For instance, if the user has indicated that their learning resource does not provide
-  a title, the app will not ask more questions about the title.
-  - *dependence_value*:	when there is dependence (dependence is not NA), this variable captures
-  the needed answer choice in the parent question. For instance, if E02 is dependent of E01,
-  _dependence_ for E02 would be "E01" and _dependence_value_ would be the answered in E01 that
-  activates question E02 (e.g.: "Yes")
-  - *question_txt*:	The user will need to read and answer these questions to assess QA compliance. Equivalent to "Checklist question" in the general implementation v3 document  
-  - *subframework*:	It shows the subframework the indicator is part of. This variable is just for partners to easily update the database
-  - *property*:	The topic/item the indicator refers to (one word). It is equivalent to the column "property" in the general implementation v3 document
-  - *category*:	It is the category that the property of the indicator is part of. It helps organizing the indicators in a user-friendly way
-  - *section*: It is the section that the category of the indicator is part of. It helps organizing the indicators in a user-friendly way
-  - *minimal_detailed*: 0 if the indicator is detailed and 1 if it is minimal (old "essential")
+  - *dependence*:	It provides the id of the indicator it is subordinated to. It 
+  determines whether
+  an indicator is subordinated to another indicator's response. It reduces redundant
+  or unecessary questions. For instance, if the user has indicated that their learning
+  resource does not provide a title, the app will not ask more questions about the title.
+  - *dependence_value*:	when there is dependence (dependence is not NA), this variable
+  captures the needed answer choice in the parent question. For instance, if E02 is dependent
+  of E01.
+  _dependence_ for E02 would be "E01" and _dependence_value_ would be the answered 
+  in E01 that activates question E02 (e.g.: "Yes")
+  - *question_txt*:	The user will need to read and answer these questions to assess
+  QA compliance. Equivalent to "Checklist question" in the general implementation v3
+  document  
+  - *subframework*:	It shows the subframework the indicator is part of. This variable
+  is just for partners to easily update the database
+  - *property*:	The topic/item the indicator refers to (one word). It is equivalent 
+  to the column "property" in the general implementation v3 document
+  - *category*:	It is the category that the property of the indicator is part of. 
+  It helps organizing the indicators in a user-friendly way
+  - *section*: It is the section that the category of the indicator is part of. It 
+  helps organizing the indicators in a user-friendly way
+  - *minimal_detailed*: 0 if the indicator is detailed and 1 if it is minimal (old 
+  "essential")
   - *answer_user*: it tracks the user answer (YES=1 or NO=0)
   - *bestpractices*	Plain text with the best practices associated to the indicator 
-  - *notes*: additional information (e.g. definitions) provided to the user regarding the question. Generally, it provides definitions about a term.
+  - *notes*: additional information (e.g. definitions) provided to the user regarding
+  the question. Generally, it provides definitions about a term.
   - *keywords_ind*:	list of terms/topics related to the indicator. 
     
 The second dataset regarding personal data questions follows a similar structure.
 Therefore, no much pre-processing will be needed.
+
+Note: In the raw dataset for the self-assessment (qa_data) there are some links in **notes**,
+**bestpractices** and **question**. To be able to render this links in the app, links are
+formatted as html link tags:
+
+  - <a href="https..." target="_blank">clickable text</a>
+
+Then, in the app script, this columns are read under the **HTML()** function.
+
 
 ## Pre-processing the dataset
 
