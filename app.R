@@ -117,6 +117,7 @@ ui <- dashboardPage(
       checkboxes.not(this).trigger('change');
     }
   });
+  
 "))
     ),
     tags$style(HTML("
@@ -126,7 +127,12 @@ ui <- dashboardPage(
     height: 70px !important;
     background-color: #3C8DBC !important;
   }
-  
+
+
+body, .wrapper, .content-wrapper, .right-side {
+  background-color: white !important;
+}
+
 
   /* Push sidebar content down to avoid overlap */
   .main-sidebar {
@@ -241,6 +247,15 @@ ui <- dashboardPage(
   #outputs_about .box-header{
     color: white;
   }
+  #outputs_about a {
+  color: #b0dbff !important; /* example: gold */
+  text-decoration: underline; /* optional */
+}
+
+#outputs_about a:hover {
+  color: #FFFFFF !important; /* example: white on hover */
+  text-decoration: none; /* optional */
+}
   
 #clickforassessment, #clickforsurvey {
   position: center;
@@ -481,13 +496,7 @@ ui <- dashboardPage(
     transform: scale(1.05);
 }
 
-.tab-pane#shiny-tab-generalfeedback,
-#general-feedback-container,
-#general-feedback {
-  background-color: transparent !important;
-  box-shadow: none !important;
-  border: none !important;
-}
+
 "
 
 )),
@@ -503,18 +512,20 @@ ui <- dashboardPage(
                      right = 0,
                      bottom = 0,
                      width = 12,
-                     height = "20%",
+                     
                      draggable = FALSE,
-                     fixed = TRUE,
-                     tags$p("Welcome to the Skills4EOSC Quality Compass, the self-assessment app that
+                     
+                     tags$p("Welcome to the Skills4EOSC Quality Compass, the app that
                      helps you in making your courses compliant with the Skills4EOSC Quality
                      Assurance Framework. In our mission of ensuring quality in the full life-cycle
-                     of training in Open Science, we have produced two main outputs that will guide you in taking your
-                     learning resources to the next level."),
+                     of training in Open Science, we have produced two main outputs that will 
+                     guide you in taking your learning resources to the next level: the QA 
+                     Checklist & Guide and the Skills4EOSC Quality Self-assessment Test."),
                      
-                     tags$p("By following our guidelines, you will ensure the integration of the FAIR-by-design 
-                     methodology, the Minimum Viable Skillsets, key Ethical and Legal aspects and other 
-                     e-learning quality criteria in your Open Science course.")
+                     tags$p("By following our guidelines, you will ensure the integration of
+                     the FAIR-by-design methodology, the Minimum Viable Skillsets model, 
+                     key Ethical and Legal aspects and other e-learning quality criteria
+                            in your Open Science course.")
                      )
               ),
               tags$div(tags$h3 (tags$b("At which stage of designing your course are you?")),
@@ -525,17 +536,19 @@ ui <- dashboardPage(
                              solidHeader = TRUE,
                              
                              tags$div(style="text-align: certer; color:#b8cce0;",
-                                       tags$h4("The S4E Quality Checklist")),
+                                       tags$h4("The S4E Quality Checklist & Guide")),
                              tags$br(),
-                             htmlOutput("checklist"),
+                             tags$div(style = "max-width: 100%; height: auto; overflow: auto;", 
+                                      htmlOutput("checklist")),
+                             
                              tags$div(
                                tags$br(),
-                               
-                               tags$p("The QA Checklist is an interactive infography that
-                               covers the main aspects and indicators of the QA Framework.
+                               tags$p("The Skills4EOSC QA Checklist & Guide is an interactive infography that
+                               covers the main aspects and indicators of our QA Framework.
                                It aims to help you in making your learning resource compliant
-                               during its first stages of design and planification. It also
-                               serves as a more to complement the deliverable (you can find
+                               during its first stages of design and planification, while 
+                               introducing the framework in a visual and user-friendly way. It also
+                               serves as a more easy-to-read complement to the deliverable (you can find
                                the deliverable below in 'Other outputs').")
                                )
                              )
@@ -545,20 +558,20 @@ ui <- dashboardPage(
                              title= tags$b("Last stage of designing your course"), 
                              solidHeader = TRUE,
                              tags$div( style="text-align: certer; color:#b8cce0;",
-                               tags$h4("The S4E Quality Compass")),
-                               tags$br(),
-                               tags$img(src = "gif_compass.gif",  
+                               tags$h4("The S4E Quality Self-assessment Test")),
+                             tags$br(),
+                             tags$img(src = "gif_compass.gif",  
                                       style = "max-width: 100%; height: auto;"),
                              
                              tags$div(
                                tags$br(),
                                
-                               tags$p("The Skills4EOSC Quality Compass is a self-assessment
-                               test that covers all indicators from the Skills4EOSC Quality
-                               Assurance Framework. After answering some those questions, you
+                               tags$p("The Skills4EOSC Quality Self-assessment Test
+                               covers all indicators from the Skills4EOSC Quality
+                               Assurance Framework. By answering its questions, you
                                will get a report on your course compliance with the framework. 
-                               It provides scores by section and recommendations on how to 
-                               improve your learning materials. You can find the tool in the 
+                               This report provides scores by section and by subframework and recommendations on how to 
+                               improve your learning materials. You can find the test in the 
                                sidebar menu")
                              )
                         )
@@ -568,17 +581,22 @@ ui <- dashboardPage(
                              width=12,
                              title= tags$b("Other Outputs related"),
                              solidHeader= TRUE,
-                             "If you want to know more about how the Skills4EOSC Quality Assurance
-                             was built, here are some Zenodo's publications regarding our work:",
-                             tags$li(a(href="https://zenodo.org/records/8305482", "D2.3. Community-endorsed quality assurance and certification framework for professional training and qualifications - first iteration")),
-                             tags$li(a(href="https://zenodo.org/records/12604767", "FAIR-by-Design Learning Materials Methodology Training of Trainers")),
-                             tags$li(a(href="https://zenodo.org/records/8101903", "D2.1 Catalogue of Open Science Career Profiles - Minimum Viable Skillsets"))
+                             "If you want to know more about how the Skills4EOSC Quality Assurance Framework was developed
+                             was built, here are some resources regarding our work and other related project's outputs:",
+                             tags$li(a(href="https://doi.org/10.5281/zenodo.16748616", "Our app manual booklet")),
+                             tags$li(a(href="https://zenodo.org/records/15731878", "D2.7 Community-endorsed quality assurance 
+                             and certification framework for professional training and qualifications - final version")),
+                             
+                             tags$li(a(href="https://zenodo.org/records/15731870", "D2.6 Catalogue of OS career profiles and MVS - update")),
+                             tags$li(a(href="https://zenodo.org/records/12604767", "FAIR-by-Design Learning Materials Methodology Training of Trainers"))
+                             
                              
                              ))
               
        ),
       
       tabItem(tabName = "assessment",
+              value="assessment",
               # Panel shown by default, hidden survey until button "clickforassessment" is clicked
               conditionalPanel("input.clickforassessment == 0", 
                                
@@ -609,9 +627,9 @@ ui <- dashboardPage(
                   right = 0,
                   bottom = 0,
                   width = 12,
-                  height = "10%",
-                  draggable = FALSE,
-                  fixed = TRUE
+                  
+                  draggable = FALSE
+                  
                     #actionButton(inputId = "m", label = "Proceed", icon = NULL)   ),  ## Conditional Panel for Approval   
                   )),
               div(style = "width: 100%; text-align: center;",
@@ -764,9 +782,9 @@ ui <- dashboardPage(
                                    right = 0,
                                    bottom = 0,
                                    width = 12,
-                                   height = "10%",
-                                   draggable = FALSE,
-                                   fixed = TRUE)),
+                                   
+                                   draggable = FALSE
+                                   )),
                                div(style = "width: 100%; text-align: center;",
                                    actionButton("clickforsurvey",
                                                 label ="Start General Feedback Survey"
@@ -813,17 +831,17 @@ ui <- dashboardPage(
                    p("Except where otherwise noted, content on this site is licensed 
                             under a", style= "display:inline;"),
                    a(href= "https://creativecommons.org/licenses/by/4.0/", "Creative Commons Attribution 4.0 
-                            International License"),
+                            International License."),
                    a(href= "https://creativecommons.org/licenses/by/4.0/", 
                      tags$img(src="cc-by.png", title = "CC-by 4.0 License",
                               height = "15px")),
-                   p(". Sanchez-Moreno, Marina",style= "display:inline;"),
+                   p(" Sanchez-Moreno, M. ",style= "display:inline;"),
                    a(href = "https://orcid.org/0000-0003-2148-2494",
                    tags$img(src = "orcid_logo.png",
                             title = "Orcid profile",
                             height = "15px"
                             )),
-                  p(".(2025). S4E Quality Compass app (1.0.0).", style= "display:inline;")),
+                  p(" (2025). S4E Quality Compass app (1.0.0).", style= "display:inline;")),
 
     right= tags$div(style="padding:8px; margin-top: 0px; position:relative; z-index:10; pointer-events:auto;",
                     # Important! Set pointer-events:auto; otherwise images links don't work
@@ -1718,8 +1736,7 @@ server <- function(input, output, session) {
       style = "max-width: 100%; height: auto;"
     )
   })
-  
-  
+
   
 }
 
