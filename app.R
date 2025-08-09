@@ -1605,39 +1605,37 @@ server <- function(input, output, session) {
   
   
   ## RESULTS: Best practices
+  
+  
   output$Best_practices <- DT::renderDataTable({
     req(user_results())
     
-    # Merge user results with survey to get best practices and section
-    merged <- user_results() %>%
-      left_join(
-        survey %>% select(question, input_id, bestpractices, pages),
-        by = c("Question" = "question"),
-        # At least two rows are duplicated (Background Info) by question (different id)
-        relationship = "many-to-many"
-      )
+    merged <- survey %>%
+      select(question, input_id, bestpractices, pages, subframework, minimal_detailed) %>%
+      # Keep all survey questions (including hidden), join answers if they exist
+      left_join(user_results(), by = c("question" = "Question"), relationship = "many-to-many")
     
-    # Filter to keep only relevant rows
     filtered <- merged %>%
-      filter(
-        pages != "0. Background information",
-        Answer %in% c("No", "No answer"),
-        !is.na(bestpractices) & bestpractices != ""
-      ) %>%
-      # Render links in best practices
-      mutate(`Best Practice` = lapply(bestpractices, HTML)) %>%  
-      select(Question, Level, Answer, `Best Practice`)
+      # Remove only background info page
+      filter(pages != "0. Background information") %>%
+      # Keep "No", "No answer" and hidden (NA)
+      filter(is.na(Answer) | Answer %in% c("No", "No answer")) %>%
+      # Keep only where we have best practices text
+      filter(!is.na(bestpractices) & bestpractices != "") %>%
+      mutate(`Best Practice` = lapply(bestpractices, HTML)) %>%
+      select(Question = question, Level = minimal_detailed, Answer,
+             `Best Practice`, subframework, pages) %>%
+      mutate(subframework = toupper(subframework))
     
-    # Create interactive datatable with export options
     DT::datatable(
       filtered,
-      escape=FALSE,
+      escape = FALSE,
       options = list(
         dom = "Bfrtip",
         buttons = c("copy", "csv", "excel", "pdf", "print"),
-        pageLength = 10
+        pageLength = 5
       ),
-      extensions = 'Buttons',
+      extensions = "Buttons",
       rownames = FALSE
     )
   })
@@ -1723,8 +1721,6 @@ server <- function(input, output, session) {
         values = c("minimal" = "solid", "detailed" = "dashed"),
         breaks = c("minimal", "detailed")
       ) +
-      
-      
       
       aes(
         axis1 = interaction(Answer, Level),
