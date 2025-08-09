@@ -457,7 +457,9 @@ body, .wrapper, .content-wrapper, .right-side {
   border: none !important;
 }
 
-#next_page, #prev_page {
+#next_page, #prev_page, .modal-footer .btn,
+.modal-footer .btn-default,
+.modal-footer .action-button {
   background-color: #3278B1;
   margin-right: 10px;
   margin-left: 10px;
@@ -473,7 +475,9 @@ body, .wrapper, .content-wrapper, .right-side {
 
 }
 #next_page:hover,
-#prev_page:hover {
+#prev_page:hover, .modal-footer .btn:hover,
+.modal-footer .btn-default,
+.modal-footer .action-button {
   background-color: #255d89;
   transform: scale(1.05);
 }
@@ -666,64 +670,115 @@ body, .wrapper, .content-wrapper, .right-side {
       tabItem(tabName = "results",
               tags$h2(style= "text-align: center; font-weight: bold; color: #3C8DBC;",
                       "Your Course Quality Report"),
+              tags$br(),
               conditionalPanel(
                 condition = "output.show_results",
                 fluidRow(
-                  box(title = "Total Score",
-                      width = 12,
-                      status = "primary",
-                      solidHeader = TRUE,
-                      valueBoxOutput("score_total"),
-                      valueBoxOutput("score_minimal"),
-                      valueBoxOutput("score_detailed")),
-                ),
-                
-                fluidRow(
-                  tabBox(title= "Your score in detail",
+                  tabBox(header= "Your score",
                          id="score_detail",
                          side = "right",
                          width = 12,
+                         type= "pills",
+                         tabPanel(id="scoretotal", "Total score",
+                                  box(width = 12,
+                                      valueBoxOutput("score_total"),
+                                      valueBoxOutput("score_minimal"),
+                                      valueBoxOutput("score_detailed"))),
                          tabPanel(id="score1", "Score by section",
-                                  fluidRow(box(solidHeader = TRUE,
+                                  fluidRow(
+                                    tags$br(),
+                                    box(title= "Content & Structure",
+                                      solidHeader = TRUE,
                                       background = NULL,
                                       width = 6,
                                       # centered valueBoxes
-                                      style = "border-color: #F49200; border-radius: 12px;",
+                                      style = "border-color: #F49200; border-radius: 12px; margin-top:5px;",
+                                      status= "primary",
                                       
-                                      title= "Content & Structure",
-                                      valueBoxOutput("score_content_minimal"),
-                                      valueBoxOutput("score_content_detailed")
+                                      valueBoxOutput("score_content_minimal", width=6),
+                                      valueBoxOutput("score_content_detailed", width=6)
                                   ),
                                   box(title= "Implementation",
                                       width = 6,
                                       solidHeader = TRUE,
                                       background = NULL,
-                                      style = "border-color: #95C11F; border-radius: 12px; padding:5px;",
-                                      valueBoxOutput("score_implementation_minimal"),
-                                      valueBoxOutput("score_implementation_detailed")
+                                      status="primary",
+                                      style = "border-color: #95C11F; border-radius: 12px;",
+                                      valueBoxOutput("score_implementation_minimal", width=6),
+                                      valueBoxOutput("score_implementation_detailed", width=6)
                                   )),
                                   fluidRow(
                                   box(title="Evaluation", 
                                       width = 6,
                                       solidHeader = TRUE,
                                       background = NULL,
+                                      status="primary",
                                       style = "border-color: #3278B1; border-radius: 12px;",
-                                      valueBoxOutput("score_evaluation_minimal"),
-                                      valueBoxOutput("score_evaluation_detailed")                     
+                                      valueBoxOutput("score_evaluation_minimal", width=6),
+                                      valueBoxOutput("score_evaluation_detailed", width=6)                     
                                   ),
                                   box(title = "Licensing & Ethics",
                                       solidHeader = TRUE,
                                       width = 6,
                                       background = NULL,
+                                      status="primary",
                                       style = "border-color: #E6007E; border-radius: 12px;",
-                                      valueBoxOutput("score_ethics_minimal"),
-                                      valueBoxOutput("score_ethics_detailed")
+                                      valueBoxOutput("score_ethics_minimal", width=6),
+                                      valueBoxOutput("score_ethics_detailed", width=6)
                                   ))
                                   ),
-                         tabPanel (id="score2", "Score by sub-framework"),
-                         tabPanel (id="score3", "Visualizing your score",
-                                   plotOutput("score_plot"))
+                         tabPanel (id="score2", "Score by sub-framework",
+                                   fluidRow(
+                                     tags$br(),
+                                     box(title= "ESSENTIAL",
+                                         solidHeader = TRUE,
+                                         background = NULL,
+                                         width = 6,
+                                         # centered valueBoxes
+                                         style = "border-color: #F49200; border-radius: 12px;",
+                                         status= "primary",
+                                         
+                                         valueBoxOutput("score_essential_minimal", width=6),
+                                         valueBoxOutput("score_essential_detailed", width=6)
+                                     ),
+                                     box(title= "FAIR",
+                                         width = 6,
+                                         solidHeader = TRUE,
+                                         background = NULL,
+                                         status="primary",
+                                         style = "border-color: #95C11F; border-radius: 12px;",
+                                         valueBoxOutput("score_fair_minimal", width=6),
+                                         valueBoxOutput("score_fair_detailed", width=6)
+                                     )),
+                                   fluidRow(
+                                     box(title="MVS", 
+                                         width = 6,
+                                         solidHeader = TRUE,
+                                         background = NULL,
+                                         status="primary",
+                                         style = "border-color: #3278B1; border-radius: 12px;",
+                                         valueBoxOutput("score_mvs_minimal", width=6),
+                                         valueBoxOutput("score_mvs_detailed", width=6)                     
+                                     ),
+                                     box(title = "ELSI",
+                                         solidHeader = TRUE,
+                                         width = 6,
+                                         background = NULL,
+                                         status="primary",
+                                         style = "border-color: #E6007E; border-radius: 12px;",
+                                         valueBoxOutput("score_elsi_minimal", width=6),
+                                         valueBoxOutput("score_elsi_detailed", width=6)
+                                     )))
+                         
                       )),
+                fluidRow(
+                  box(id="score3",
+                      title= "Visualizing your score",
+                      width=12,
+                      status= "primary",
+                      solidHeader=TRUE,
+                      plotOutput("score_plot"))
+                ),
 
                 fluidRow(
                   box(title = "How Can You Improve the Quality of Your Course?",
@@ -874,6 +929,39 @@ body, .wrapper, .content-wrapper, .right-side {
 ## SERVER
 
 server <- function(input, output, session) {
+  
+  # Score_total_level FUNCTION
+  # Help function to calculate scores (report from self-assessment test)
+  score_total_level <- function(levels = c("minimal", "detailed"), section = NULL, subframework = NULL) {
+    all_relevant <- survey %>%
+      # Filter by level and section or sub-framework (optional)
+      filter(minimal_detailed %in% levels) %>%
+      { if (!is.null(section)) filter(., pages == section) else . } %>%
+      { if (!is.null(subframework)) filter(., subframework == subframework) else . }
+    
+    # Denominator: total - Not applicable answers
+    not_applicable <- sum(vapply(all_relevant$input_id, function(id) {
+      val <- input[[paste0("q_", id)]]
+      !is.null(val) && val == "Not applicable"
+    }, logical(1)))
+    
+    total <- nrow(all_relevant) - not_applicable
+    
+    # Numerator: visible questions answered "Yes"
+    visible_questions <- all_relevant %>%
+      rowwise() %>%
+      filter(is.na(dependence) || input[[paste0("q_", dependence)]] == dependence_value) %>%
+      ungroup()
+    
+    yes_answers <- sum(vapply(visible_questions$input_id, function(id) {
+      val <- input[[paste0("q_", id)]]
+      !is.null(val) && val == "Yes"
+    }, logical(1)))
+    
+    list(yes = yes_answers, total = total)
+  }
+  
+
   
  ## TERMS OF SERVICE AND PROVICY POLICY 
   # HTML docs rendering
@@ -1382,156 +1470,140 @@ server <- function(input, output, session) {
     updateTabItems(session, "sidebarMenuid", selected = "about")
   })
   
-  #RESULTS. SCORES
+  ## RESULTS. SCORES
+  # Rendering each valuebox (using score_total_level function )
+  
   # Total score
   output$score_total <- renderValueBox({
-    total_questions <- survey %>% filter(minimal_detailed %in% c("minimal", "detailed"))
-    
-    not_applicable <- sum(vapply(total_questions$input_id, function(id) {
-      val <- input[[paste0("q_", id)]]
-      !is.null(val) && length(val) == 1 && val[[1]] == "Not applicable"
-    }, logical(1)))
-    
-    yes_answers <- sum(vapply(total_questions$input_id, function(id) {
-      val <- input[[paste0("q_", id)]]
-      !is.null(val) && length(val) == 1 && val[[1]] == "Yes"
-
-    }, logical(1)))
-    
-    total <- nrow(total_questions) - not_applicable
-    
+    res <- score_total_level(c("minimal", "detailed"))
     valueBox(
-      paste0(yes_answers, " / ", total),
+      paste0(res$yes, " / ", res$total),
       subtitle = "Total Yes Answers",
       icon = icon("check-circle"),
       color = "green"
     )
   })
   
-  
-  
   # Minimal total score
   output$score_minimal <- renderValueBox({
-    minimal_questions <- survey %>% filter(minimal_detailed == "minimal")
-    
-    not_applicable <- sum(vapply(minimal_questions$input_id, function(id) {
-      val <- input[[paste0("q_", id)]]
-      !is.null(val) && length(val) == 1 && val[[1]] == "Not applicable"
-    }, logical(1)))
-    
-    yes_answers <- sum(vapply(minimal_questions$input_id, function(id) {
-      val <- input[[paste0("q_", id)]]
-      !is.null(val) && length(val) == 1 && val[[1]] == "Yes"
-
-    }, logical(1)))
-    
-    total <- nrow(minimal_questions) - not_applicable
-    
+    res <- score_total_level("minimal")
     valueBox(
-      paste0(yes_answers, " / ", total),
+      paste0(res$yes, " / ", res$total),
       subtitle = "Minimal Level - Yes Answers",
       icon = icon("flag-checkered"),
       color = "yellow"
     )
   })
   
-  
+  #Detailed total score
   
   output$score_detailed <- renderValueBox({
-    detailed_questions <- survey %>% filter(minimal_detailed == "detailed")
-    
-    not_applicable <- sum(vapply(detailed_questions$input_id, function(id) {
-      val <- input[[paste0("q_", id)]]
-      !is.null(val) && length(val) == 1 && val[[1]] == "Not applicable"
-    }, logical(1)))
-    
-    yes_answers <- sum(vapply(detailed_questions$input_id, function(id) {
-      val <- input[[paste0("q_", id)]]
-      !is.null(val) && length(val) == 1 && val[[1]] == "Yes"
-
-    }, logical(1)))
-    
-    total <- nrow(detailed_questions) - not_applicable
-    
+    res <- score_total_level("detailed")
     valueBox(
-      paste0(yes_answers, " / ", total),
+      paste0(res$yes, " / ", res$total),
       subtitle = "Detailed Level - Yes Answers",
       icon = icon("clipboard-check"),
       color = "blue"
     )
   })
+  
+
   # SCORE BY SECTION
-  # function for all sections
-  score_by_section <- function(section, level) {
-    df <- user_results()
-    if (is.null(df)) return(list(yes = 0, total = 0))
-    
-    section_df <- df %>%
-      filter(Page == section, Level == level)
-    
-    not_applicable <- sum(section_df$Answer == "Not applicable")
-    yes_answers <- sum(section_df$Answer == "Yes")
-    total <- nrow(section_df) - not_applicable
-    
-    list(yes = yes_answers, total = total)
-  }
-  
-  
- 
-  #SCORE BY SECTION
-  # Rendering each valuebox
+
+  # Rendering each valuebox (using score_total_level function )
   # Section: Content & Structure
   output$score_content_minimal <- renderValueBox({
-    req(user_results())
-    res <- score_by_section("1. Content & Structure", "minimal")
+    res <- score_total_level("minimal", section = "1. Content & Structure")
     valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon("flag"), color = "yellow")
   })
   
   output$score_content_detailed <- renderValueBox({
-    req(user_results())
-    res <- score_by_section("1. Content & Structure", "detailed")
+    res <- score_total_level("detailed", section = "1. Content & Structure")
     valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon("clipboard"), color = "blue")
   })
   
   # Section: Implementation
   output$score_implementation_minimal <- renderValueBox({
-    req(user_results())
-    res <- score_by_section("2. Implementation", "minimal")
+    res <- score_total_level("minimal", section = "2. Implementation")
     valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon("flag"), color = "yellow")
   })
   
   output$score_implementation_detailed <- renderValueBox({
-    req(user_results())
-    res <- score_by_section("2. Implementation", "detailed")
+    res <- score_total_level("detailed", section = "2. Implementation")
     valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon("clipboard"), color = "blue")
   })
   
+  
   # Section: Evaluation
   output$score_evaluation_minimal <- renderValueBox({
-    req(user_results())
-    res <- score_by_section("3. Evaluation", "minimal")
+    res <- score_total_level("minimal", section = "3. Evaluation")
     valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon("flag"), color = "yellow")
   })
   
   output$score_evaluation_detailed <- renderValueBox({
-    req(user_results())
-    res <- score_by_section("3. Evaluation", "detailed")
+    res <- score_total_level("detailed", section = "3. Evaluation")
     valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon("clipboard"), color = "blue")
   })
   
   # Section: Licensing & Ethics
   output$score_ethics_minimal <- renderValueBox({
-    req(user_results())
-    res <- score_by_section("4. Licensing & Ethics", "minimal")
+    res <- score_total_level("minimal", section = "4. Licensing & Ethics")
     valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon("flag"), color = "yellow")
   })
   
   output$score_ethics_detailed <- renderValueBox({
-    req(user_results())
-    res <- score_by_section("4. Licensing & Ethics", "detailed")
+    res <- score_total_level("detailed", section = "4. Licensing & Ethics")
     valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon("clipboard"), color = "blue")
   })
 
+  ## SCORE BY SUBFRAMEWORK
+  
+  #SF: Essential
+  output$score_essential_minimal <- renderValueBox({
+    res <- score_total_level("minimal", subframework = "essential")
+    valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon("flag"), color = "yellow")
+  })
+  
+  output$score_essential_detailed <- renderValueBox({
+    res <- score_total_level("detailed", subframework = "essential")
+    valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon("clipboard"), color = "blue")
+  })
+  
+  # SF: FAIR
+  output$score_fair_minimal <- renderValueBox({
+    res <- score_total_level("minimal", subframework = "fair")
+    valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon("flag"), color = "yellow")
+  })
+  
+  output$score_fair_detailed <- renderValueBox({
+    res <- score_total_level("detailed", subframework = "fair")
+    valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon("clipboard"), color = "blue")
+  })
+  
+  # SF: MVS
+  output$score_mvs_minimal <- renderValueBox({
+    res <- score_total_level("minimal", subframework = "mvs")
+    valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon("flag"), color = "yellow")
+  })
+  
+  output$score_mvs_detailed <- renderValueBox({
+    res <- score_total_level("detailed", subframework = "mvs")
+    valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon("clipboard"), color = "blue")
+  })
+  
+  # SF: ELSI
+  output$score_elsi_minimal <- renderValueBox({
+    res <- score_total_level("minimal", subframework = "elsi")
+    valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon("flag"), color = "yellow")
+  })
+  
+  output$score_elsi_detailed <- renderValueBox({
+    res <- score_total_level("detailed", subframework = "elsi")
+    valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon("clipboard"), color = "blue")
+  })
+  
+  
+  
   ## RESULTS: Best practices
   output$Best_practices <- DT::renderDataTable({
     req(user_results())
@@ -1571,76 +1643,138 @@ server <- function(input, output, session) {
   })
   
   
+  
+  
+  
+  
   ## SCORE PLOT
   output$score_plot <- renderPlot({
     req(user_results())
     
-    df <- user_results() %>%
-      filter(Page != "0. Background information") %>%
-      left_join(survey %>% select(question, subframework, pages), by = c("Question" = "question")) %>%
-      mutate(
+    # Join all survey questions with user results 
+    # Include hidden as "No answer"
+    df <- survey %>%
+      dplyr::filter(pages != "0. Background information",
+                    minimal_detailed %in% c("minimal", "detailed")) %>%
+      dplyr::left_join(user_results(), by = c("question" = "Question")) %>%
+      dplyr::mutate(
+        Answer = ifelse(is.na(Answer) | Answer == "", "No answer", Answer),
+        Level = ifelse(is.na(Level), minimal_detailed, Level),
+        Page = ifelse(is.na(Page), pages, Page),
+        Feedback = ifelse(is.na(Feedback), "", Feedback),
         Framework = toupper(subframework),
-        SECTION = stringr::str_wrap(pages, 20),
-        LevelT = if_else(Level == "detailed", "b", "a"),
-        Answer = as.character(ifelse(is.na(Answer), "-1", Answer))  # ← force to character
+        SECTION = stringr::str_wrap(Page, 40)
       ) %>%
-      bind_rows(
-        tibble(Framework = "et", Level = "zzz", SECTION = "D", Answer = "20"),
-        tibble(Framework = "et", Level = "zzz", SECTION = "D", Answer = "20"),
-        tibble(Framework = "em", Level = "kkk", SECTION = "Comz", Answer = "20"),
-        tibble(Framework = "em", Level = "kkk", SECTION = "Comz", Answer = "20"),
-        tibble(Framework = "fb", Level = "aaa", SECTION = "F", Answer = "20"),
-        tibble(Framework = "fb", Level = "aaa", SECTION = "F", Answer = "20"),
-        tibble(Framework = "et", Level = "zzz", SECTION = "D", Answer = "20"),
-        tibble(Framework = "et", Level = "zzz", SECTION = "D", Answer = "20"),
-        tibble(Framework = "em", Level = "kkk", SECTION = "Comz", Answer = "20"),
-        tibble(Framework = "em", Level = "kkk", SECTION = "Comz", Answer = "20"),
-        tibble(Framework = "fb", Level = "aaa", SECTION = "F", Answer = "20"),
-        tibble(Framework = "fb", Level = "aaa", SECTION = "F", Answer = "20")
+      dplyr::select(Framework, Level, SECTION, Answer)
+    
+    # Add dummy spacer rows for visual balance
+    df <- df %>%
+      dplyr::bind_rows(
+        tibble::tibble(Framework = "ET", Level = "zzz", SECTION = "D",    Answer = "20"),
+        tibble::tibble(Framework = "ET", Level = "zzz", SECTION = "D",    Answer = "20"),
+        tibble::tibble(Framework = "EM", Level = "kkk", SECTION = "Comz", Answer = "20"),
+        tibble::tibble(Framework = "EM", Level = "kkk", SECTION = "Comz", Answer = "20"),
+        tibble::tibble(Framework = "FB", Level = "aaa", SECTION = "F",    Answer = "20"),
+        tibble::tibble(Framework = "FB", Level = "aaa", SECTION = "F",    Answer = "20"),
+        tibble::tibble(Framework = "ET", Level = "zzz", SECTION = "D",    Answer = "20"),
+        tibble::tibble(Framework = "EM", Level = "kkk", SECTION = "Comz", Answer = "20"),
+        tibble::tibble(Framework = "FB", Level = "aaa", SECTION = "F",    Answer = "20")
       ) %>%
-      mutate(
-        color = if_else(Level %in% c("aaa", "kkk", "zzz"), "#ffffff00", "black"),
-        alpha = if_else(Level %in% c("aaa", "kkk", "zzz"), 0, 0.7)
+      dplyr::mutate(
+        color = dplyr::if_else(Level %in% c("aaa", "kkk", "zzz"), "#ffffff00", "black"),
+        alpha = dplyr::if_else(Level %in% c("aaa", "kkk", "zzz"), 0, 0.7)
       )
     
     library(ggalluvial)
-    ggplot(df) + theme_void() + scale_color_identity() + scale_alpha_identity() +
+    ggplot(df) +
+      theme_void() +
+      # Top legends: horizontal, Answer + Level
+      theme(
+        legend.position = "top",
+        legend.box = "horizontal",
+        legend.direction = "horizontal",
+        legend.title = element_text(size = 10),
+        legend.text = element_text(size = 10),
+        legend.background = element_rect(fill = alpha("white", 0.8), color = NA),
+        plot.margin = margin(10, 20, 10, 10)
+      ) +
+      coord_cartesian(clip = "off") +
       
+      # Suppress any color legend (we only want linetype legend for Level)
+      scale_color_identity(guide = "none") +
+      scale_alpha_identity() +
+      
+      # Color legend for Answer
       scale_fill_manual(
+        name = "Answer:",
         values = c(
           "Yes" = "darkgreen",
           "No" = "darkred",
           "Not applicable" = "lightblue",
-          "-1" = "grey",      # for NAs or missing
-          "20" = "#ffffff00"       # for your spacer rows
-        )
-      )+
-    
+          "No answer" = "grey",
+          "20" = "#ffffff00"
+        ),
+        breaks = c("Yes", "No", "Not applicable", "No answer")
+      ) +
+      
+      # Line-type legend for Level
+      scale_linetype_manual(
+        name = "Level:",
+        values = c("minimal" = "solid", "detailed" = "dashed"),
+        breaks = c("minimal", "detailed")
+      ) +
+      
+      
+      
       aes(
         axis1 = interaction(Answer, Level),
         axis2 = interaction(Answer, Level, Framework),
         axis3 = interaction(Answer, Level, SECTION)
       ) +
-      geom_flow(aes(fill = factor(Answer)), show.legend = FALSE, alpha = 0.25) +
+      
+      # Flows (color legend from fill = Answer)
+      geom_flow(aes(fill = factor(Answer)), show.legend = TRUE, alpha = 0.25) +
       geom_lode(aes(fill = factor(Answer), alpha = alpha), show.legend = FALSE) +
+      
+      # Counts in strata
       geom_text(aes(label = after_stat(n), color = color), stat = "stratum") +
+      
+      # Borders (linetype legend from Level)
       geom_stratum(
-        aes(axis1 = interaction(Level),
-            axis2 = interaction(Level, Framework),
-            axis3 = interaction(Level, SECTION),
-            color = color, linetype = LevelT),
-        fill = NA, show.legend = FALSE
+        aes(
+          axis1 = interaction(Level),
+          axis2 = interaction(Level, Framework),
+          axis3 = interaction(Level, SECTION),
+          linetype = Level
+        ),
+        color = "black",
+        fill = NA,
+        show.legend = TRUE
       ) +
+      
+      # Axis labels
       geom_text(
-        aes(axis1 = Level, axis2 = Framework, axis3 = SECTION, color = color,
-            label = after_stat(stratum), y = after_stat(2 * y - ymin) + 1.5
-),
-        stat = "stratum", vjust = 0, lineheight = .8  ) +
+        aes(
+          axis1 = Level,
+          axis2 = Framework,
+          axis3 = SECTION,
+          color = color,
+          label = after_stat(stratum),
+          y = after_stat(2 * y - ymin) + 0.5
+        ),
+        stat = "stratum",
+        vjust = 0,
+        lineheight = .8
+      ) +
+      
       annotate("text", x = 1:3, y = 72,
                label = c("Total", "By Framework", "By Section"),
                size = 5, fontface = "bold")
-    
   })
+  
+
+  
+  
   
   
   
