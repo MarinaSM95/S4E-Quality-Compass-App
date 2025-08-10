@@ -1842,7 +1842,11 @@ server <- function(input, output, session) {
           conditionalPanel(condition = condition,
                            div(style = "margin-bottom: 1.5em;", label, input_ui))
         } else {
-          div(style = "margin-bottom: 1.5em;", label, input_ui)
+          div(style = "margin-bottom: 1.5em;", div(style = "margin-bottom: 1.5em; padding-left: 14px;",
+            div(style = "margin-bottom: 0.5em;", label),
+            input_ui
+          )
+          )
         }
       })
       
@@ -1861,7 +1865,8 @@ server <- function(input, output, session) {
             ),
             cat
           ),
-          div(style= "background-color: transparent !important; margin-bottom: 2em; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 1.2em;", questions)
+          div(style= "background-color: transparent !important; margin-bottom: 2em; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 1.2em;", 
+              questions)
         )
       )
     })

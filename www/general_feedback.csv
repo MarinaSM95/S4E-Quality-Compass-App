@@ -1,9 +1,10 @@
 ﻿input_id;dependence_value;dependence;required;question;input_type;option;section;category;property
-Z01;;;0;Which of the following most accurately defines your current experience in developing learning/training materials?;mc;I regularly design learning materials;About you;About you;About you
-Z01;;;0;Which of the following most accurately defines your current experience in developing learning/training materials?;mc;I occasionally design learning materials;About you;About you;About you
-Z01;;;0;Which of the following most accurately defines your current experience in developing learning/training materials?;mc;I regularly give trainings;About you;About you;About you
-Z01;;;0;Which of the following most accurately defines your current experience in developing learning/training materials?;mc;I occasionally give trainings;About you;About you;About you
-Z01;;;0;Which of the following most accurately defines your current experience in developing learning/training materials?;mc;None of the above;About you;About you;About you
+Z01;;;0;Which of the following most accurately defines your current experience in developing learning/training materials?;select;Select your experience;About you;About you;About you
+Z01;;;0;Which of the following most accurately defines your current experience in developing learning/training materials?;select;I regularly design learning materials;About you;About you;About you
+Z01;;;0;Which of the following most accurately defines your current experience in developing learning/training materials?;select;I occasionally design learning materials;About you;About you;About you
+Z01;;;0;Which of the following most accurately defines your current experience in developing learning/training materials?;select;I regularly give trainings;About you;About you;About you
+Z01;;;0;Which of the following most accurately defines your current experience in developing learning/training materials?;select;I occasionally give trainings;About you;About you;About you
+Z01;;;0;Which of the following most accurately defines your current experience in developing learning/training materials?;select;None of the above;About you;About you;About you
 Z02;;;0;How familiar are you with the implementation of Quality Assurance processes in learning materials?;textSlider;Not familiar at all;About you;About you;About you
 Z02;;;0;How familiar are you with the implementation of Quality Assurance processes in learning materials?;textSlider;Not very familiar;About you;About you;About you
 Z02;;;0;How familiar are you with the implementation of Quality Assurance processes in learning materials?;textSlider;Somewhat familiar;About you;About you;About you
@@ -24,6 +25,7 @@ Z05;;;0;How familiar are you with the implementation of  Ethical, Legal, and Soc
 Z05;;;0;How familiar are you with the implementation of  Ethical, Legal, and Social Issues (ELSI) aspects in learning materials?;textSlider;Somewhat familiar;About you;About you;About you
 Z05;;;0;How familiar are you with the implementation of  Ethical, Legal, and Social Issues (ELSI) aspects in learning materials?;textSlider;Familiar;About you;About you;About you
 Z05;;;0;How familiar are you with the implementation of  Ethical, Legal, and Social Issues (ELSI) aspects in learning materials?;textSlider;Very familiar;About you;About you;About you
+Z06;;;0;Have you assessed any learning materials using the S4E Quality Compass app?;select;Select;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
 Z06;;;0;Have you assessed any learning materials using the S4E Quality Compass app?;select;No;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
 Z06;;;0;Have you assessed any learning materials using the S4E Quality Compass app?;select;Yes;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
 Z07;Yes;Z06;0;How was your experience applying it?;textSlider;Very dissatisfied;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
@@ -31,6 +33,7 @@ Z07;Yes;Z06;0;How was your experience applying it?;textSlider;Moderately dissati
 Z07;Yes;Z06;0;How was your experience applying it?;textSlider;Neither satisfied nor dissatisfied;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
 Z07;Yes;Z06;0;How was your experience applying it?;textSlider;Moderately satisfied;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
 Z07;Yes;Z06;0;How was your experience applying it?;textSlider;Very satisfied;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
+Z08;;;0;Have you tried using the checklist as a quick glance shortcut to make sure the learning materials you are developing are complaint with the Skills4EOSC Quality Assurance Framework?;select;Select;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
 Z08;;;0;Have you tried using the checklist as a quick glance shortcut to make sure the learning materials you are developing are complaint with the Skills4EOSC Quality Assurance Framework?;select;No;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
 Z08;;;0; Have you tried using the checklist as a quick glance shortcut to make sure the learning materials you are developing are complaint with the Skills4EOSC Quality Assurance Framework?;select;Yes;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
 Z09;Yes;Z08;0;How was your experience applying it?;textSlider;Very dissatisfied;Quality Assurance Framework;Quality Assurance Framework;Quality Assurance Framework
