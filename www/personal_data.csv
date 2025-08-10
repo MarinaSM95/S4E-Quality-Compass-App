@@ -1,9 +1,11 @@
 ﻿input_id;dependence_value;dependence;required;question;input_type;option;section;category;property
+P01;;;0;Are you involved in any way with the Skills4EOSC project?;select;Select your involvement;0. Background information;About you;About you
 P01;;;0;Are you involved in any way with the Skills4EOSC project?;select;Yes, I am a partner of the project;0. Background information;About you;About you
 P01;;;0;Are you involved in any way with the Skills4EOSC project?;select;Yes, I work in one of the Competence Centers from the project;0. Background information;About you;About you
 P01;;;0;Are you involved in any way with the Skills4EOSC project?;select;Yes, I am part of the EOSC Consortium;0. Background information;About you;About you
 P01;;;0;Are you involved in any way with the Skills4EOSC project?;select;No;0. Background information;About you;About you
 P02;;;0;Please, provide your course title:;text;"Example: ""TtT 2.1: Shaping Open Science Champions: a train-the-trainers course for educators of Phd candidate""";0. Background information;About you;About you
+P03;;;0;Your current role:;select;Select your role;0. Background information;About you;About you
 P03;;;0;Your current role:;select;High education teacher;0. Background information;About you;About you
 P03;;;0;Your current role:;select;Researcher;0. Background information;About you;About you
 P03;;;0;Your current role:;select;Data Steward;0. Background information;About you;About you
@@ -13,6 +15,7 @@ P03;;;0;Your current role:;select;Civil Servant;0. Background information;About 
 P03;;;0;Your current role:;select;Legal Expert;0. Background information;About you;About you
 P03;;;0;Your current role:;select;Other;0. Background information;About you;About you
 P04;Other;P03;0;Your current role:;text;Please, specify your current role;0. Background information;About you;About you
+P05;;;0;Your institution:;select;Select your institution;0. Background information;About you;About you
 P05;;;0;Your institution:;select;Other;0. Background information;About you;About you
 P05;;;0;Your institution:;select;Consortium GARR (GARR);0. Background information;About you;About you
 P05;;;0;Your institution:;select;Consiglio Nazionale delle Ricerche (CNR);0. Background information;About you;About you
@@ -59,6 +62,7 @@ P05;;;0;Your institution:;select;Universidad Carlos III de Madrid (UC3M);0. Back
 P05;;;0;Your institution:;select;Norwegian Directorate For Higher Education And Skills (HK-Dir);0. Background information;About you;About you
 P05;;;0;Your institution:;select;Uninett Sigma2 As (SIGMA2);0. Background information;About you;About you
 P06;Other;P05;0;Your institution:;text;Please, specify your current institution;0. Background information;About you;About you
+P07;;;0;Your field of expertise:;select;Select your field;0. Background information;About you;About you
 P07;;;0;Your field of expertise:;select;Natural Sciences;0. Background information;About you;About you
 P07;;;0;Your field of expertise:;select;Engineering and technology;0. Background information;About you;About you
 P07;;;0;Your field of expertise:;select;Medical and Health Sciences;0. Background information;About you;About you

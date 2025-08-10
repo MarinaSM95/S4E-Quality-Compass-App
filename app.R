@@ -674,7 +674,8 @@ body, .wrapper, .content-wrapper, .right-side {
               conditionalPanel(
                 condition = "output.show_results",
                 fluidRow(
-                  tabBox(header= "Your score",
+                  tabBox(header=tags$span("Your score",
+                                   style = "color: #3C8DBC;; font-size: 20px; font-weight: bold;"),
                          id="score_detail",
                          side = "right",
                          width = 12,
@@ -1417,36 +1418,71 @@ server <- function(input, output, session) {
       
       user_results(results_df)
       
+    
+      
+      
       output$results_table <- DT::renderDataTable({
-        # Render links in question column
+        req(user_results())
+        
+        # Build results_df including hidden questions
+        results_df <- survey %>%
+          dplyr::select(question, input_id, pages, subframework, minimal_detailed) %>%
+          dplyr::left_join(
+            user_results() %>% dplyr::select(Question, Answer, Level, Feedback),
+            by = c("question" = "Question"),
+            relationship = "many-to-many"   # allow expected duplicates
+          ) %>%
+          dplyr::mutate(
+            # blank, NA, or "Select..." answers as No answer
+            Answer = dplyr::case_when(
+              is.na(Answer) | trimws(Answer) == "" ~ "No answer",
+              grepl("^\\s*Select", as.character(Answer), ignore.case = TRUE) ~ "No answer",
+              TRUE ~ as.character(Answer)
+            ),
+            # Fill Level from survey if missing
+            Level = dplyr::coalesce(Level, minimal_detailed),
+            Framework = toupper(subframework),
+            Section   = pages,
+            Question = question
+          ) %>%
+          # Keep Feedback and Answer columns in final table
+          dplyr::select(
+            Question, Framework, Section, Answer, Level, Feedback
+          ) %>%
+          dplyr::arrange(Section)
+        
+        # Render HTML links in Question column
         results_df$Question <- lapply(results_df$Question, HTML)
-        DT::datatable(results_df, 
-                      extensions = 'Buttons',
-                      escape=FALSE,
-                      options = list(
-                        dom = "Bfrtip",
-                        buttons = c("copy", "csv", "excel", "pdf", "print"),
-                        pageLength = 10,
-                        rowCallback = JS(
-                          "function(row, data, index) {",
-                          "  var answer = data[3];", 
-                          "  var level = data[4];",   
-                          "  if (answer === 'No answer') {",
-                          "    $(row).css({'background-color': '#f0f0f0', 'color': '#555'});",
-                          "  } else if (answer === 'Yes' && (level === 'minimal' || level === 'detailed')) {",
-                          "    $(row).css('background-color', '#d4edda');",
-                          "  } else if (answer === 'No' && level === 'minimal') {",
-                          "    $(row).css('background-color', '#f8d7da');",
-                          "  } else if (answer === 'No' && level === 'detailed') {",
-                          "    $(row).css('background-color', '#fff3cd');",
-                          "  }",
-                          "}"
-                        )
-                        
-                      ),
-                      rownames = FALSE
+        
+        DT::datatable(
+          results_df,
+          extensions = 'Buttons',
+          escape = FALSE,
+          options = list(
+            dom = "Bfrtip",
+            buttons = c("copy", "csv", "excel", "pdf", "print"),
+            pageLength = 10,
+            rowCallback = JS(
+              "function(row, data, index) {",
+              "  var answer = data[3]; // 0-based: 0 Q, 1 Framework, 2 Section, 3 Answer, 4 Level, 5 Feedback",
+              "  var level = data[4];",
+              "  if (answer === 'No answer') {",
+              "    $(row).css({'background-color': '#f0f0f0', 'color': '#555'});",
+              "  } else if (answer === 'Yes' && (level === 'minimal' || level === 'detailed')) {",
+              "    $(row).css('background-color', '#d4edda');",
+              "  } else if (answer === 'No' && level === 'minimal') {",
+              "    $(row).css('background-color', '#f8d7da');",
+              "  } else if (answer === 'No' && level === 'detailed') {",
+              "    $(row).css('background-color', '#fff3cd');",
+              "  }",
+              "}"
+            )
+          ),
+          rownames = FALSE
         )
       })
+      
+      
       
       
       
