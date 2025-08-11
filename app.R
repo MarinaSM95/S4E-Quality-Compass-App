@@ -17,8 +17,46 @@ library(shinyjs)
 library(shinyBS)
 library(bsplus)
 library(DT)
+library(gargle)
+library(googledrive)
+library(googlesheets4)
 
 
+# Only read project .Renviron if env vars are missing (nice for local dev)
+need_env <- !nzchar(Sys.getenv("GCP_SERVICE_ACCOUNT_JSON")) &&
+  !nzchar(Sys.getenv("GCP_SA_JSON_CONTENT"))
+if (need_env && file.exists(".Renviron")) readRenviron(".Renviron")
+
+library(googledrive)
+library(googlesheets4)
+
+safe_gs4_auth <- function() {
+  sa_path   <- Sys.getenv("GCP_SERVICE_ACCOUNT_JSON")
+  sa_inline <- Sys.getenv("GCP_SA_JSON_CONTENT")  # JSON *content* in an env var
+  
+  if (nzchar(sa_path) && file.exists(sa_path)) {
+    googledrive::drive_auth(path = sa_path)
+    googlesheets4::gs4_auth(token = googledrive::drive_token())
+    return(invisible(TRUE))
+  }
+  
+  if (!nzchar(sa_path) && nzchar(sa_inline)) {
+    tmp <- tempfile(fileext = ".json")
+    writeLines(sa_inline, tmp, useBytes = TRUE)
+    try(Sys.chmod(tmp, "600"), silent = TRUE)               # restrict perms (Windows)
+    on.exit(try(unlink(tmp), silent = TRUE), add = TRUE)    # clean up
+    
+    googledrive::drive_auth(path = tmp)
+    googlesheets4::gs4_auth(token = googledrive::drive_token())
+    return(invisible(TRUE))
+  }
+  
+  # Local dev fallback (interactive OAuth)
+  googlesheets4::gs4_auth()
+  googledrive::drive_auth()
+  invisible(TRUE)
+}
+safe_gs4_auth()
 
 
 
@@ -1401,6 +1439,7 @@ server <- function(input, output, session) {
         list(
           Number = i,
           Page = row$pages,
+          InputID  = row$input_id, 
           Question = row$question,
           Answer = if (!is.null(input[[input_id]]) && nzchar(input[[input_id]])) input[[input_id]] else "No answer",
           Level = if (!is.null(row$minimal_detailed) && !is.na(row$minimal_detailed)) row$minimal_detailed else "Personal question",
@@ -1418,7 +1457,62 @@ server <- function(input, output, session) {
       
       user_results(results_df)
       
-    
+      # Append responses to Google Sheet
+      library(uuid)
+      
+      submission_id <- uuid::UUIDgenerate(use.time = FALSE)
+      submitted_at  <- format(Sys.time(), tz = "Europe/Madrid", usetz = TRUE)
+      user_id       <- session$user %||% session$token %||% ""
+      
+      sa_df <- survey %>%
+        dplyr::select(input_id, question, pages, subframework, minimal_detailed) %>%
+        dplyr::left_join(
+          user_results() %>% dplyr::select(InputID, Answer, Level, Feedback),
+          by = c("input_id" = "InputID")
+        ) %>%
+        dplyr::mutate(
+          answer_raw  = as.character(Answer),
+          answer_norm = dplyr::case_when(
+            is.na(answer_raw) ~ "No answer",
+            trimws(answer_raw) == "" ~ "No answer",
+            grepl("^\\s*Select", answer_raw, ignore.case = TRUE) ~ "No answer",
+            TRUE ~ answer_raw),
+          level       = dplyr::coalesce(Level, minimal_detailed),
+          feedback    = dplyr::coalesce(Feedback, ""),
+          question_order = match(input_id, survey$input_id),
+          is_background  = pages == "0. Background information"
+        ) %>%
+        dplyr::transmute(
+          submission_id, submitted_at, user_id,
+          question_order,
+          input_id,
+          page = pages,
+          subframework,
+          level,
+          question,
+          answer_raw, answer_norm,
+          feedback,
+          is_background
+        )
+      
+      # Write to Google Sheets
+      safe_gs4_auth()
+      sa_id <- Sys.getenv("SA_SHEET_ID")
+      if (nzchar(sa_id)) {
+        # Create tab if missing (no-op if it already exists)
+        try({
+          if (!"responses" %in% googlesheets4::sheet_names(sa_id)) {
+            googlesheets4::sheet_add(sa_id, sheet = "responses")
+          }
+        }, silent = TRUE)
+        
+        tryCatch({
+          googlesheets4::sheet_append(ss = sa_id, data = sa_df, sheet = "responses")
+        }, error = function(e) {
+          showNotification(paste("Could not save self-assessment:", e$message),
+                           type = "error", duration = 8)
+        })
+      }
       
       
       output$results_table <- DT::renderDataTable({
@@ -1881,30 +1975,51 @@ server <- function(input, output, session) {
   })
   
   
-  
-  #Store responses
+  # SUBMIT General feedback: Modal dialog and add responses to Google Sheet
   observeEvent(input$submit_general_feedback, {
-    responses <- lapply(general_feedback$input_id, function(id) {
-      value <- input[[paste0("gf_", id)]]
-      if (is.null(value)) value <- NA
-      value
-    })
-    
-    result_df <- data.frame(
-      input_id = general_feedback$input_id,
-      question = general_feedback$question,
-      answer = unlist(responses),
-      stringsAsFactors = FALSE
+    # 1) Gather + normalize answers
+    answers <- setNames(
+      lapply(general_feedback$input_id, function(id) {
+        val <- input[[paste0("gf_", id)]]
+        val <- if (is.null(val)) NA_character_ else as.character(val)
+        if (is.na(val) || trimws(val) == "" || grepl("^\\s*Select", val, ignore.case = TRUE)) {
+          "No answer"
+        } else {
+          val
+        }
+      }),
+      general_feedback$question     # or use general_feedback$input_id for shorter column names
     )
     
-    print(result_df)  # Or store/save it
+    # 2) Metadata FIRST (so they appear as the first columns)
+    ts  <- format(Sys.time(), tz = "Europe/Madrid", usetz = TRUE)
+    uid <- session$user %||% session$token %||% ""   # fallback if session$user is NULL
     
+    # 3) One-row, wide format (metadata + answers)
+    result_df <- as.data.frame(
+      c(list(timestamp = ts, user_id = uid), answers),
+      stringsAsFactors = FALSE,
+      check.names = TRUE   # makes very long question texts valid column names
+    )
+    
+    # 4) Append to Google Sheet
+    safe_gs4_auth()
+    googlesheets4::sheet_append(
+      ss   = Sys.getenv("GF_SHEET_ID"),
+      data = result_df
+      # , sheet = "responses"   # uncomment if you’re using a specific tab name
+    )
+    
+    # 5) Confirmation
     showModal(modalDialog(
       title = "Thank you!",
       "Your feedback has been submitted successfully.",
       easyClose = TRUE
     ))
   })
+  
+
+  
   
   
   # checklist iframe (about page)
