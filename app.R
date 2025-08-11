@@ -712,6 +712,16 @@ body, .wrapper, .content-wrapper, .right-side {
               conditionalPanel(
                 condition = "output.show_results",
                 fluidRow(
+                  box(id="maturitylvl",
+                      title= "Your course maturity level",
+                      width=12,
+                      status= "primary",
+                      solidHeader=TRUE,
+                      div(
+                        style = "text-align:center;",
+                        valueBoxOutput("maturity_level", width=12))
+                      )),
+                fluidRow(
                   tabBox(header=tags$span("Your score",
                                    style = "color: #3C8DBC;; font-size: 20px; font-weight: bold;"),
                          id="score_detail",
@@ -820,7 +830,7 @@ body, .wrapper, .content-wrapper, .right-side {
                 ),
 
                 fluidRow(
-                  box(title = "How Can You Improve the Quality of Your Course?",
+                  box(title = "How can you ymprove the quality of your course?",
                       width = 12,
                       status = "primary",
                       solidHeader = TRUE,
@@ -971,22 +981,22 @@ server <- function(input, output, session) {
   
   # Score_total_level FUNCTION
   # Help function to calculate scores (report from self-assessment test)
-  score_total_level <- function(levels = c("minimal", "detailed"), section = NULL, subframework = NULL) {
+  score_total_level <- function(levels = c("minimal", "detailed"),
+                                section = NULL,
+                                subfw = NULL) {
     all_relevant <- survey %>%
-      # Filter by level and section or sub-framework (optional)
       filter(minimal_detailed %in% levels) %>%
       { if (!is.null(section)) filter(., pages == section) else . } %>%
-      { if (!is.null(subframework)) filter(., subframework == subframework) else . }
+      { if (!is.null(subfw))  filter(., subframework == subfw) else . }
     
-    # Denominator: total - Not applicable answers
+    # Denominator: total questions in the group minus "Not applicable"
     not_applicable <- sum(vapply(all_relevant$input_id, function(id) {
       val <- input[[paste0("q_", id)]]
       !is.null(val) && val == "Not applicable"
     }, logical(1)))
-    
     total <- nrow(all_relevant) - not_applicable
     
-    # Numerator: visible questions answered "Yes"
+    # Numerator: count "Yes" only for questions that are currently visible
     visible_questions <- all_relevant %>%
       rowwise() %>%
       filter(is.na(dependence) || input[[paste0("q_", dependence)]] == dependence_value) %>%
@@ -999,6 +1009,59 @@ server <- function(input, output, session) {
     
     list(yes = yes_answers, total = total)
   }
+  
+  # Helper: compute maturity level from current scores
+  maturity_level_info <- reactive({
+    # Reuse your score_total_level() helper
+    total   <- score_total_level(c("minimal", "detailed"))
+    minimal <- score_total_level("minimal")
+    detailed<- score_total_level("detailed")
+    
+    pct_total <- if (total$total > 0) total$yes / total$total else 0
+    
+    # Adjustable cutoff for "Defined"
+    cutoff_defined <- 0.50  # 50% — tweak as you like
+    
+    # Decide level
+    if (minimal$total > 0 && minimal$yes == minimal$total &&
+        detailed$total > 0 && detailed$yes == detailed$total) {
+      list(
+        level = 4,
+        title = "Level 4 – Optimized",
+        desc  = "Full detailed & minimal compliance; feedback loops; continuous improvement.",
+        color = "purple",
+        icon  = "ranking-star"
+      )
+    } else if (minimal$total > 0 && minimal$yes == minimal$total) {
+      list(
+        level = 3,
+        title = "Level 3 – Managed",
+        desc  = "Full minimal compliance + learning resource reviews.",
+        color = "blue",
+        icon  = "hand-fist"
+      )
+    } else if (pct_total >= cutoff_defined) {
+      list(
+        level = 2,
+        title = "Level 2 – Defined",
+        desc  = "Partial use of QAF; some minimal indicators implemented.",
+        color = "green",
+        icon  = "rocket"
+      )
+    } else {
+      list(
+        level = 1,
+        title = "Level 1 – Initial",
+        desc  = "No QA in place; ad hoc training materials.",
+        color = "yellow",
+        icon  = "face-grin-stars"
+      )
+    }
+  })
+  
+  
+  
+  
   
 
   
@@ -1600,6 +1663,22 @@ server <- function(input, output, session) {
     updateTabItems(session, "sidebarMenuid", selected = "about")
   })
   
+  
+  
+  ## MATURITY LEVEL
+  # Render tmaturity level box
+  output$maturity_level <- renderValueBox({
+    info <- maturity_level_info()
+    valueBox(
+      value    = paste0("Level ", info$level),
+      subtitle = paste0(info$title, " — ", info$desc),
+      icon     = icon(info$icon),
+      color    = info$color
+    )
+  })
+  
+  
+  
   ## RESULTS. SCORES
   # Rendering each valuebox (using score_total_level function )
   
@@ -1690,45 +1769,45 @@ server <- function(input, output, session) {
   
   #SF: Essential
   output$score_essential_minimal <- renderValueBox({
-    res <- score_total_level("minimal", subframework = "essential")
+    res <- score_total_level("minimal", subfw = "essential")
     valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon("flag"), color = "yellow")
   })
   
   output$score_essential_detailed <- renderValueBox({
-    res <- score_total_level("detailed", subframework = "essential")
+    res <- score_total_level("detailed", subfw = "essential")
     valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon("clipboard"), color = "blue")
   })
   
   # SF: FAIR
   output$score_fair_minimal <- renderValueBox({
-    res <- score_total_level("minimal", subframework = "fair")
+    res <- score_total_level("minimal", subfw = "fair")
     valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon("flag"), color = "yellow")
   })
   
   output$score_fair_detailed <- renderValueBox({
-    res <- score_total_level("detailed", subframework = "fair")
+    res <- score_total_level("detailed", subfw = "fair")
     valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon("clipboard"), color = "blue")
   })
   
   # SF: MVS
   output$score_mvs_minimal <- renderValueBox({
-    res <- score_total_level("minimal", subframework = "mvs")
+    res <- score_total_level("minimal", subfw = "mvs")
     valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon("flag"), color = "yellow")
   })
   
   output$score_mvs_detailed <- renderValueBox({
-    res <- score_total_level("detailed", subframework = "mvs")
+    res <- score_total_level("detailed", subfw = "mvs")
     valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon("clipboard"), color = "blue")
   })
   
   # SF: ELSI
   output$score_elsi_minimal <- renderValueBox({
-    res <- score_total_level("minimal", subframework = "elsi")
+    res <- score_total_level("minimal", subfw = "elsi")
     valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon("flag"), color = "yellow")
   })
   
   output$score_elsi_detailed <- renderValueBox({
-    res <- score_total_level("detailed", subframework = "elsi")
+    res <- score_total_level("detailed", subfw = "elsi")
     valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon("clipboard"), color = "blue")
   })
   
