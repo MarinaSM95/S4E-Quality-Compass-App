@@ -1813,6 +1813,17 @@ server <- function(input, output, session) {
         alpha = dplyr::if_else(Level %in% c("aaa", "kkk", "zzz"), 0, 0.7)
       )
     
+    # Order Framework for axis 2
+    df$Framework <- factor(
+      df$Framework,
+      levels = c("ESSENTIAL","ET", "MVS", "EM","FAIR","FB", "ELSI") 
+    )
+    # Order Section for axis 3
+    df$Section <- factor(
+      df$SECTION,
+      levels = c("1. Content & Structure", "D", "2. Implementation", "Comz", "3. Evaluation","F", "4. Licensing & Ethics") 
+    )
+    
     library(ggalluvial)
     ggplot(df) +
       theme_void() +
