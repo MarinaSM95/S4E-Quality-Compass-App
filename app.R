@@ -826,7 +826,7 @@ body, .wrapper, .content-wrapper, .right-side {
                       width=12,
                       status= "primary",
                       solidHeader=TRUE,
-                      plotOutput("score_plot"))
+                      plotOutput("score_plot", height= "600px"))
                 ),
 
                 fluidRow(
