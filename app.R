@@ -13,13 +13,13 @@ library(shinyWidgets)
 library(dplyr)
 library(readr)
 library(bootstrap)
-library(shinyjs)
 library(shinyBS)
 library(bsplus)
 library(DT)
 library(gargle)
 library(googledrive)
 library(googlesheets4)
+library(htmltools)
 
 
 # Only read project .Renviron if env vars are missing (nice for local dev)
@@ -27,8 +27,6 @@ need_env <- !nzchar(Sys.getenv("GCP_SERVICE_ACCOUNT_JSON")) &&
   !nzchar(Sys.getenv("GCP_SA_JSON_CONTENT"))
 if (need_env && file.exists(".Renviron")) readRenviron(".Renviron")
 
-library(googledrive)
-library(googlesheets4)
 
 safe_gs4_auth <- function() {
   sa_path   <- Sys.getenv("GCP_SERVICE_ACCOUNT_JSON")
@@ -77,37 +75,65 @@ general_feedback <- read_csv2("www/general_feedback_clean.csv") %>%
   )
 
 
+# Decorative icons (accessible)
+icon_dec <- function(name, ...) {
+  icon(name, `aria-hidden` = "true", role = "presentation", ...)  # Font Awesome icon hidden from AT
+}
+
+
+# Helper (ARIA)
+liveBoxOutput <- function(outputId, width = 4, label = NULL) {
+  tags$div(
+    role = "status", `aria-live` = "polite",
+    `aria-label` = label,
+    valueBoxOutput(outputId, width = width)
+  )
+}
+
+
+
 
 ui <- dashboardPage(
+  title="S4E Quality Compass",
  
  
   ## HEADER
   header=dashboardHeader(
     #TITLE in Header: logo
     title = tags$div(
-      style = "display: flex; align-items: center; height: 70px;",
+      style = "display: flex; align-items: center; height: 80px;",
+      # Accessibility: skip to main content link
       tags$a(
-        href = "https://www.skills4eosc.eu/",
+        href = "#main-content",        
+        class = "skip-link",
+        "Skip to main content"
+      ),
+      tags$a(
+        href   = "https://www.skills4eosc.eu/",
+        `aria-label` = "Go to Skills4EOSC website",
+        target = "_blank", rel = "noopener noreferrer",
         
         # Horizontal logo (default)
         tags$img(
           src = "logo_S4E_neg_horizontal.png",
-          title = "Skills4EOSC website",
+          alt = "",
+          title = "Skills4EOSC project",
           height = "55px",
           class = "logo-expanded"
-          
         ),
         
         # Vertical logo (collapsed)
         tags$img(
           src = "logo_S4E_neg_vertical.png",
-          title = "Skills4EOSC website",
+          alt = "",
+          title = "Skills4EOSC project",
           height = "30px",
           class = "logo-collapsed",
           style = "display: none;"
         )
       )
     )
+    
     ,
     # Title width of header
     titleWidth="250px", # same as width in Sidebar
@@ -136,14 +162,17 @@ ui <- dashboardPage(
     
     width = 250,
     sidebarMenu( uiOutput("dynamic_sidebar"))
-  )
-  
-  ,
+  ),
   
   ## BODY
   dashboardBody(
     useShinyjs(),
-    tags$head(tags$script(HTML("
+    
+    
+    tags$head(
+      
+      tags$script(HTML("document.documentElement.setAttribute('lang','en');")),
+      tags$script(HTML("
   $(document).on('change', 'input[type=checkbox]', function(e) {
     var name = $(this).attr('name');
     var checkboxes = $('input[name=' + name + ']');
@@ -156,7 +185,236 @@ ui <- dashboardPage(
     }
   });
   
-"))
+")),
+      tags$script(HTML("
+  (function () {
+    function wireBootstrapTabs() {
+      // Only treat real Bootstrap tab/pill navs as tabs
+      document.querySelectorAll('.nav-tabs, .nav-pills').forEach(function(ul){
+        ul.setAttribute('role','tablist');
+      });
+
+      document.querySelectorAll('.nav-tabs li > a[data-toggle=\"tab\"], .nav-pills li > a[data-toggle=\"tab\"]').forEach(function(a){
+        a.setAttribute('role','tab');
+        if (!a.id) a.id = 'tab-' + Math.random().toString(36).slice(2);
+        var target = a.getAttribute('href'); // e.g. '#pane-id'
+        if (target && target.charAt(0) === '#') {
+          a.setAttribute('aria-controls', target.slice(1));
+          var panel = document.querySelector(target);
+          if (panel) {
+            panel.setAttribute('role','tabpanel');
+            panel.setAttribute('aria-labelledby', a.id);
+          }
+        }
+      });
+    }
+
+    function scrubNonTabs() {
+      // Sidebar menu items must NOT be tabs
+      document.querySelectorAll('.sidebar-menu li > a[data-toggle=\"tab\"]').forEach(function(a){
+        a.removeAttribute('role');
+        a.removeAttribute('aria-selected');
+        a.removeAttribute('aria-controls');
+      });
+
+      // Defensive: anywhere outside a real tablist, strip role=tab
+      document.querySelectorAll('a[role=\"tab\"]').forEach(function(a){
+        if (!a.closest('.nav-tabs, .nav-pills')) {
+          a.removeAttribute('role');
+          a.removeAttribute('aria-selected');
+          a.removeAttribute('aria-controls');
+        }
+      });
+
+      // Defensive: stray tabpanels not owned by a proper tab
+      document.querySelectorAll('[role=\"tabpanel\"]').forEach(function(p){
+        var labelledby = p.getAttribute('aria-labelledby');
+        var labelEl = labelledby && document.getElementById(labelledby);
+        if (!labelEl || !labelEl.closest('.nav-tabs, .nav-pills')) {
+          p.removeAttribute('role');
+          p.removeAttribute('aria-labelledby');
+        }
+      });
+
+      // Remove aria-selected from plain links (valid only on tabs)
+      document.querySelectorAll('a[aria-selected]:not([data-toggle=\"tab\"])').forEach(function(a){
+        a.removeAttribute('aria-selected');
+      });
+    }
+
+    function setAriaCurrentOnActive() {
+      // Clear any previous aria-current
+      document.querySelectorAll('a[aria-current]').forEach(function(a){
+        a.removeAttribute('aria-current');
+      });
+      // Mark only the active sidebar item as current page
+      document.querySelectorAll('.sidebar-menu li.active > a').forEach(function(a){
+        a.setAttribute('aria-current','page');
+      });
+    }
+
+    function applyAll() {
+      wireBootstrapTabs();
+      scrubNonTabs();
+      setAriaCurrentOnActive();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', applyAll);
+    } else {
+      applyAll();
+    }
+    window.addEventListener('load', function(){
+      setTimeout(applyAll, 0);
+      setTimeout(applyAll, 500);
+    });
+
+    // Re-apply on Bootstrap tab events and Shiny input churn
+    $(document).on('shown.bs.tab', 'a[data-toggle=\"tab\"], .sidebar-menu a', applyAll);
+    $(document).on('shiny:inputchanged', function(){ setTimeout(applyAll, 0); });
+
+    // Watch for DOM/attribute changes that might re-introduce tab roles
+    new MutationObserver(function(){ applyAll(); })
+      .observe(document.body, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ['class','aria-selected','role']
+      });
+  })();
+")),
+      tags$script(HTML("
+  (function () {
+    /* -------------------------
+       Tabs & ARIA cleanup
+       ------------------------- */
+    function wireBootstrapTabs() {
+      document.querySelectorAll('.nav-tabs, .nav-pills').forEach(function(ul){
+        ul.setAttribute('role','tablist');
+      });
+
+      document.querySelectorAll('.nav-tabs li > a[data-toggle=\"tab\"], .nav-pills li > a[data-toggle=\"tab\"]').forEach(function(a){
+        a.setAttribute('role','tab');
+        if (!a.id) a.id = 'tab-' + Math.random().toString(36).slice(2);
+        var target = a.getAttribute('href');
+        if (target && target.charAt(0) === '#') {
+          a.setAttribute('aria-controls', target.slice(1));
+          var panel = document.querySelector(target);
+          if (panel) {
+            panel.setAttribute('role','tabpanel');
+            panel.setAttribute('aria-labelledby', a.id);
+          }
+        }
+      });
+    }
+
+    function scrubNonTabs() {
+      document.querySelectorAll('.sidebar-menu li > a[data-toggle=\"tab\"]').forEach(function(a){
+        a.removeAttribute('role');
+        a.removeAttribute('aria-selected');
+        a.removeAttribute('aria-controls');
+      });
+
+      document.querySelectorAll('a[role=\"tab\"]').forEach(function(a){
+        if (!a.closest('.nav-tabs, .nav-pills')) {
+          a.removeAttribute('role');
+          a.removeAttribute('aria-selected');
+          a.removeAttribute('aria-controls');
+        }
+      });
+
+      document.querySelectorAll('[role=\"tabpanel\"]').forEach(function(p){
+        var labelledby = p.getAttribute('aria-labelledby');
+        var labelEl = labelledby && document.getElementById(labelledby);
+        if (!labelEl || !labelEl.closest('.nav-tabs, .nav-pills')) {
+          p.removeAttribute('role');
+          p.removeAttribute('aria-labelledby');
+        }
+      });
+
+      document.querySelectorAll('a[aria-selected]:not([data-toggle=\"tab\"])').forEach(function(a){
+        a.removeAttribute('aria-selected');
+      });
+    }
+
+    function setAriaCurrentOnActive() {
+      document.querySelectorAll('a[aria-current]').forEach(function(a){
+        a.removeAttribute('aria-current');
+      });
+      document.querySelectorAll('.sidebar-menu li.active > a').forEach(function(a){
+        a.setAttribute('aria-current','page');
+      });
+    }
+
+    /* -------------------------
+       Remove EMPTY role=list
+       (robust: ignores hidden items)
+       ------------------------- */
+    function isVisible(el){
+      if (!el) return false;
+      if (el.closest('[aria-hidden=\"true\"]')) return false;
+      var cs = window.getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden') return false;
+      // zero-size often means visually gone
+      var rect = el.getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) return false;
+      return true;
+    }
+
+    function scrubEmptyLists() {
+      document.querySelectorAll('[role=\"list\"]').forEach(function(el){
+        // Find *visible* listitems
+        var items = Array.prototype.slice.call(
+          el.querySelectorAll('li, [role=\"listitem\"]')
+        ).filter(isVisible);
+
+        // Also treat whitespace-only content as empty
+        var textOnly = (el.textContent || '').trim().length === 0;
+
+        if (items.length === 0 && textOnly) {
+          el.removeAttribute('role');
+          // If it is a <ul>/<ol> with no visible items, change it to a neutral <div>
+          if ((el.tagName === 'UL' || el.tagName === 'OL') && el.children.length === 0) {
+            var div = document.createElement('div');
+            while (el.firstChild) div.appendChild(el.firstChild);
+            el.parentNode.replaceChild(div, el);
+          }
+        }
+      });
+    }
+
+    /* -------------------------
+       Apply all
+       ------------------------- */
+    function applyAll() {
+      wireBootstrapTabs();
+      scrubNonTabs();
+      setAriaCurrentOnActive();
+      scrubEmptyLists();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', applyAll);
+    } else {
+      applyAll();
+    }
+    window.addEventListener('load', function(){
+      setTimeout(applyAll, 0);
+      setTimeout(applyAll, 500);
+    });
+
+    $(document).on('shown.bs.tab', 'a[data-toggle=\"tab\"], .sidebar-menu a', applyAll);
+    $(document).on('shiny:inputchanged', function(){ setTimeout(applyAll, 0); });
+
+    new MutationObserver(function(){ applyAll(); })
+      .observe(document.body, {
+        subtree: true, childList: true, attributes: true,
+        attributeFilter: ['class','aria-selected','role','style']
+      });
+  })();
+")),
+      
+
     ),
     tags$style(HTML("
     
@@ -195,7 +453,7 @@ body, .wrapper, .content-wrapper, .right-side {
 
 .logo-collapsed {
   display: none;
-  max-height: 40px;
+  max-height: 44px;
 }
 
 .sidebar-collapse .logo-expanded {
@@ -235,48 +493,26 @@ body, .wrapper, .content-wrapper, .right-side {
   }
 
   #intro_about {
-    background-color:#d26f2d;
+    background-color:#b35b04;
     color: white;
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
     border-radius: 12px;
     padding: 2em;
    
   }
-  #checklist_about {
-    background-color: #3278B1;
+  #checklist_about, #compass_about {
+    background-color: #1d598a;
     color: white;
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
     border-radius: 12px;
     padding: 2em;
   }
-  #checklist_about .box-header{
-    color: white;
-  }
-  #compass_about {
-    background-color: #3278B1;
-    color: white;
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2); 
-    padding: 2em;
-    border-radius: 12px;
-  }
-  #compass_about .box-header{
+  #checklist_about .box-header, #compass_about .box-header{
     color: white;
   }
   
-  /* Self-assessment and feedback survey intro pages */
-  #introassessment, #introsurvey {
-    background-color: #d26f2d;
-    color: white;
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2); 
-    padding: 2em;
-    border-radius: 12px;
-  }
-  #introassessment .box-header, #introsurvey .box-header{
-     
-    color: white;
-  }
   #outputs_about {
-    background-color: #3278B1;
+    background-color: #1d598a;
     color: white;
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);  
     border-radius: 12px;
@@ -286,14 +522,44 @@ body, .wrapper, .content-wrapper, .right-side {
     color: white;
   }
   #outputs_about a {
-  color: #b0dbff !important; /* example: gold */
-  text-decoration: underline; /* optional */
+  color: #FFFFFF !important; /* example: gold */
+  text-decoration: underline; 
 }
 
 #outputs_about a:hover {
   color: #FFFFFF !important; /* example: white on hover */
-  text-decoration: none; /* optional */
+  text-decoration: none; 
 }
+
+/* Style for H2 and h3 inside box headers (removes extra default spacing) */
+/* new: let text wrap naturally and fill the header */
+.box .box-header h2, .box-header h3 {
+  margin: 0;
+  padding: 0;
+  font-weight: bold;
+  line-height: 1.3;
+  color: inherit;
+  display: block;               /* wrap properly */
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+
+  
+  
+  /* Self-assessment and feedback survey intro pages */
+  #introassessment, #introsurvey {
+    background-color: #b35b04;
+    color: white;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2); 
+    padding: 2em;
+    border-radius: 12px;
+  }
+  #introassessment .box-header, #introsurvey .box-header{
+     
+    color: white;
+  }
+  
   
 #clickforassessment, #clickforsurvey {
   position: center;
@@ -302,7 +568,7 @@ body, .wrapper, .content-wrapper, .right-side {
   justify-content: center;
   gap: 12px;
   padding: 14px 28px;
-  background: linear-gradient(145deg, #3278B1, #3278B1);
+  background: linear-gradient(145deg, #1d598a, #1d598a);
   border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 100px;
   color: #fff;
@@ -324,7 +590,7 @@ body, .wrapper, .content-wrapper, .right-side {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: conic-gradient(from 0deg, #E6007E, #3278B1, #95C11F, #E6007E);
+  background: conic-gradient(from 0deg, #E6007E, #1d598a, #95C11F, #E6007E);
   animation: rotate 4s linear infinite;
   z-index: -2;
 }
@@ -333,7 +599,7 @@ body, .wrapper, .content-wrapper, .right-side {
   content: '';
   position: absolute;
   inset: 2px;
-  background: #3278B1;
+  background: #1d598a;
   border-radius: inherit;
   z-index: -1;
 }
@@ -420,16 +686,16 @@ body, .wrapper, .content-wrapper, .right-side {
   background-color: #333 !important; /* gray */
 }
 #select_section1.active {
-  background-color: #F49200 !important; /* orange */
+  background-color: #b35b04 !important; /* orange */
 }
 #select_section2.active {
-  background-color: #95C11F !important; /* green */
+  background-color: #5D7E02 !important; /* green */
 }
 #select_section3.active {
-  background-color: #3278B1 !important; /* blue */
+  background-color: #1d598a !important; /* blue */
 }
 #select_section4.active {
-  background-color: #E6007E !important; /* pink */
+  background-color: #BD0068 !important; /* pink */
 }
 
 
@@ -458,6 +724,9 @@ body, .wrapper, .content-wrapper, .right-side {
 #self-assessment .box-header, #general-feedback .box-header {
   display: none !important;
 }
+#self-assessment, #general-feedback, .tab-content, .content-wrapper {
+  overflow: visible !important;
+}
 
 .flag-button {
   background: none;
@@ -467,7 +736,7 @@ body, .wrapper, .content-wrapper, .right-side {
 }
 
 .popover-title {
-  background-color: #3278B1 !important;
+  background-color: #1d598a !important;
   color: white !important;
   font-weight: bold;
 }
@@ -478,7 +747,7 @@ body, .wrapper, .content-wrapper, .right-side {
 }
 
 .modal-header {
-  background-color: #3278B1 !important;
+  background-color: #1d598a !important;
   color: white !important;
   font-weight: bold;
   border-bottom: none;
@@ -498,7 +767,9 @@ body, .wrapper, .content-wrapper, .right-side {
 #next_page, #prev_page, .modal-footer .btn,
 .modal-footer .btn-default,
 .modal-footer .action-button {
-  background-color: #3278B1;
+min-width:44px;
+min-height:44px;
+  background-color: #1d598a;
   margin-right: 10px;
   margin-left: 10px;
   justify: center !important;
@@ -538,16 +809,113 @@ body, .wrapper, .content-wrapper, .right-side {
     transform: scale(1.05);
 }
 
+/* ===== Accessibility helpers & focus styles (final) ===== */
+
+/* SR-only utility */
+.sr-only {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0);
+  white-space: nowrap; border: 0;
+}
+
+/* Show focus only for keyboard navigation */
+:focus { 
+  outline: none;                 /* don't show on mouse click */
+}
+
+/* Reveal outlines only when keyboard users tab */
+:focus-visible {
+  outline: 3px solid #000 !important;
+  outline-offset: 2px;
+  box-shadow: none !important;
+}
+
+/* Bootstrap tends to add shadows; kill them on plain :focus
+   (focus outline still shows via :focus-visible) */
+a:focus,
+button:focus,
+.btn:focus,
+.action-button:focus,
+.form-control:focus,
+input:focus,
+select:focus,
+textarea:focus,
+.pagination > li > a:focus,
+.pagination > li > span:focus {
+  box-shadow: none !important;
+  outline: none;                 /* rely on :focus-visible instead */
+}
+
+/* Keep touch-target sizing AND strong outline for keyboard focus on key buttons */
+#next_page:focus-visible,
+#prev_page:focus-visible,
+#submit:focus-visible,
+#submit_general_feedback:focus-visible {
+  outline: 3px solid #000 !important;
+  outline-offset: 2px;
+}
+
+/* --- Skip link: hidden by default; shown only for keyboard users --- */
+.skip-link {
+  position: absolute;
+  left: 8px; top: 8px;
+  transform: translateY(-200%);     /* hide off-canvas without layout jank */
+  transition: transform .15s ease;
+  z-index: 2000;
+  background: #fff;
+  color: #000;
+  padding: 10px 14px;
+  border: 2px solid #000;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+/* Do NOT reveal on generic :focus (mouse click) */
+.skip-link:focus {
+  transform: translateY(-200%);
+  outline: none;
+}
+
+/* Reveal only for keyboard users */
+.skip-link:focus-visible {
+  transform: translateY(0);
+  outline: none;                   /* border already provides contrast */
+}
+
+/* --- Footer links: WCAG contrast and clear focus state --- */
+.main-footer a {
+  color: #0645AD !important;       /* higher-contrast blue */
+  text-decoration: underline;
+  outline: none;
+}
+
+.main-footer a:hover,
+.main-footer a:focus-visible {
+  color: #000000 !important;        /* max contrast on hover/keyboard focus */
+  text-decoration: none;
+}
+
+
+
 
 "
 
 )),
+tags$main(
+  id = "main-content",
+  tabindex = "-1",  # so it can receive focus when skipped to
+  role = "main",
     
     tabItems(
-      tabItem(tabName = "about",
+      tabItem(tabName = "about", 
+              tags$h1(id= "about-h1", "About page", class = "sr-only"), # Title only for SR
+              div(role = "region", `aria-labelledby` = "about-h1", id = "about-main",# Focus
+                  tags$h2("Welcome section", class="sr-only"),
               fluidRow( width="100%",
                 box (id= "intro_about",
-                     title = tags$b("Welcome!"),
+                     title ="Welcome",
                      solidHeader = TRUE,
                      top = 0,
                      left = 0,
@@ -556,6 +924,7 @@ body, .wrapper, .content-wrapper, .right-side {
                      width = 12,
                      
                      draggable = FALSE,
+                     
                      
                      tags$p("Welcome to the Skills4EOSC Quality Compass, the app that
                      helps you in making your courses compliant with the Skills4EOSC Quality
@@ -570,70 +939,69 @@ body, .wrapper, .content-wrapper, .right-side {
                             in your Open Science course.")
                      )
               ),
-              tags$div(tags$h3 (tags$b("At which stage of designing your course are you?")),
-                       style= "color:grey; text-align: center;"),
+              tags$div(tags$h2 ("At which stage of designing your course are you?"),
+                       style= "color:grey; text-align: center; font-weight:bold"),
               tags$br(),
-              fluidRow (box (id= "checklist_about", width=6,
-                             title= tags$b("First stage of designing your course"), 
-                             solidHeader = TRUE,
-                             
-                             tags$div(style="text-align: certer; color:#b8cce0;",
-                                       tags$h4("The S4E Quality Checklist & Guide")),
-                             tags$br(),
-                             tags$div(style = "max-width: 100%; height: auto; overflow: auto;", 
-                                      htmlOutput("checklist")),
-                             
-                             tags$div(
-                               tags$br(),
-                               tags$p("The Skills4EOSC QA Checklist & Guide is an interactive infography that
-                               covers the main aspects and indicators of our QA Framework.
-                               It aims to help you in making your learning resource compliant
-                               during its first stages of design and planification, while 
-                               introducing the framework in a visual and user-friendly way. It also
-                               serves as a more easy-to-read complement to the deliverable (you can find
-                               the deliverable below in 'Other outputs').")
-                               )
-                             )
-                        ,
-                        box (id= "compass_about",
-                             width=6,
-                             title= tags$b("Last stage of designing your course"), 
-                             solidHeader = TRUE,
-                             tags$div( style="text-align: certer; color:#b8cce0;",
-                               tags$h4("The S4E Quality Self-assessment Test")),
-                             tags$br(),
-                             tags$img(src = "gif_compass.gif",  
-                                      style = "max-width: 100%; height: auto;"),
-                             
-                             tags$div(
-                               tags$br(),
-                               
-                               tags$p("The Skills4EOSC Quality Self-assessment Test
-                               covers all indicators from the Skills4EOSC Quality
-                               Assurance Framework. By answering its questions, you
-                               will get a report on your course compliance with the framework. 
-                               This report provides scores by section and by subframework and recommendations on how to 
-                               improve your learning materials. You can find the test in the 
-                               sidebar menu")
-                             )
-                        )
-                        ),
+              fluidRow (box(
+                id = "checklist_about",
+                width = 6,
+                title = "First stage of designing your course",
+                
+                solidHeader = TRUE,
+                tags$div(style="text-align: certer; color:#FFFFFF;",
+                         tags$b("The S4E Quality Checklist & Guide")),
+                tags$br(),
+                tags$div(style = "max-width: 100%; height: auto; overflow: auto;", 
+                htmlOutput("checklist")),
+                tags$div(tags$br(),
+                tags$p("The Skills4EOSC QA Checklist & Guide is an interactive infography that
+                       covers the main aspects and indicators of our QA Framework.
+                       It aims to help you in making your learning resource compliant
+                       during its first stages of design and planification, while 
+                       introducing the framework in a visual and user-friendly way. It also
+                       serves as a more easy-to-read complement to the deliverable (you can find
+                       the deliverable below in 'Other outputs').")
+                       )
+                             ),
+                 box (id= "compass_about",
+                     width=6,
+                     title= "Last stage of designing your course", 
+                     solidHeader = TRUE,
+                     tags$div( style="text-align: certer; color:#FFFFFF;",
+                       tags$h4("The S4E Quality Self-assessment Test")),
+                     tags$br(),
+                     tags$img(src = "gif_compass.gif",
+                              alt="Animated preview of the S4E Quality Self‑assessment flow",
+                              title = "Self-assessment test gif",
+                              style = "max-width: 100%; height: auto;"),
+                     
+                     tags$div(
+                       tags$br(),
+                       
+                       tags$p("The Skills4EOSC Quality Self-assessment Test
+                       covers all indicators from the Skills4EOSC Quality
+                       Assurance Framework. By answering its questions, you
+                       will get a report on your course compliance with the framework. 
+                       This report provides scores by section and by subframework and recommendations on how to 
+                       improve your learning materials. You can find the test in the 
+                       sidebar menu")
+                     ))),
               fluidRow(
                         box (id= "outputs_about",
                              width=12,
-                             title= tags$b("Other Outputs related"),
+                             title= "Other Outputs related",
                              solidHeader= TRUE,
-                             "If you want to know more about how the Skills4EOSC Quality Assurance Framework was developed
-                             was built, here are some resources regarding our work and other related project's outputs:",
-                             tags$li(a(href="https://doi.org/10.5281/zenodo.16748616", "Our app manual booklet")),
-                             tags$li(a(href="https://zenodo.org/records/15731878", "D2.7 Community-endorsed quality assurance 
+                             tags$p("If you want to know more about how the Skills4EOSC Quality Assurance Framework was developed
+                             was built, here are some resources regarding our work and other related project's outputs:"),
+                             
+                             tags$ul(
+                               tags$li(a(href="https://doi.org/10.5281/zenodo.16748616", "Skills4EOSC Quality Compass App: Improving your Open Science training course (booklet)")),
+                               tags$li(a(href="https://zenodo.org/records/15731878", "D2.7 Community-endorsed quality assurance 
                              and certification framework for professional training and qualifications - final version")),
-                             
-                             tags$li(a(href="https://zenodo.org/records/15731870", "D2.6 Catalogue of OS career profiles and MVS - update")),
-                             tags$li(a(href="https://zenodo.org/records/12604767", "FAIR-by-Design Learning Materials Methodology Training of Trainers"))
-                             
-                             
-                             ))
+                               tags$li(a(href="https://zenodo.org/records/15731870", "D2.6 Catalogue of OS career profiles and MVS - update")),
+                               tags$li(a(href="https://zenodo.org/records/12604767", "FAIR-by-Design Learning Materials Methodology Training of Trainers"))
+                            )))
+              )
               
        ),
       
@@ -641,213 +1009,244 @@ body, .wrapper, .content-wrapper, .right-side {
               value="assessment",
               # Panel shown by default, hidden survey until button "clickforassessment" is clicked
               conditionalPanel("input.clickforassessment == 0", 
-                               
-              fluidRow (
-                box(
-                  id = "introassessment",
-                  title = tags$b("Self-assessment test"),
-                  tags$p("The Skills4EOSC Quality self-assessment
-                  test covers all indicators from the Skills4EOSC Quality
-                  Assurance Framework. During the test, you will navigate through 5 sections: Background
-                  Information, Content and Structure, Implementation, Evaluation and
-                  Licensing and Ethics. In addition to answering the questions, 
-                  we encourage you to provide any comments or doubts you may have about a question.
-                  Just click on the flag next to each question, write your comments and send them."),
-                  tags$p("After submitting your answers, you
-                  will get a report on your course compliance with our quality framework. 
-                  This report provides your scores by section and by subframework and recommendations on
-                  how to improve your learning materials."),
-                  tags$p("Regarding personal data collection, you don't need to provide
-                  any personal information you don't wish to be stored. You will still
-                  receive your report and results regardless of providing personal 
-                  information. Any information you decide to provide together with and your answers and
-                  feedback will be store for research purposes and to keep improving
-                  the tool. For more information about this, visit our Privacy Policy page 
-                         in the sidebar menu"), 
-                  
-                  top = 0,
-                  left = 0,
-                  right = 0,
-                  bottom = 0,
-                  width = 12,
-                  
-                  draggable = FALSE
-                  
-                    #actionButton(inputId = "m", label = "Proceed", icon = NULL)   ),  ## Conditional Panel for Approval   
-                  )),
-              div(style = "width: 100%; text-align: center;",
-                  actionButton("clickforassessment", label = "Start Self-assessment Test")
-              )
+                               tags$h1(id = "assess-h1-intro","Self-assessment test intro", class = "sr-only"),# Title only for SR  
+                               div(role = "region", `aria-labelledby` = "assess-h1-intro", id = "assessment-intro",
+                                                
+                                  fluidRow (
+                                    box(
+                                      id = "introassessment",
+                                      title = tags$h2("Self-assessment test"),
+                                      tags$p("The Skills4EOSC Quality self-assessment
+                                      test covers all indicators from the Skills4EOSC Quality
+                                      Assurance Framework. During the test, you will navigate through 5 sections: Background
+                                      Information, Content and Structure, Implementation, Evaluation and
+                                      Licensing and Ethics. In addition to answering the questions, 
+                                      we encourage you to provide any comments or doubts you may have about a question.
+                                      Just click on the flag next to each question, write your comments and send them."),
+                                      tags$p("After submitting your answers, you
+                                      will get a report on your course compliance with our quality framework. 
+                                      This report provides your scores by section and by subframework and recommendations on
+                                      how to improve your learning materials."),
+                                      tags$p("Regarding personal data collection, you don't need to provide
+                                      any personal information you don't wish to be stored. You will still
+                                      receive your report and results regardless of providing personal 
+                                      information. Any information you decide to provide together with and your answers and
+                                      feedback will be store for research purposes and to keep improving
+                                      the tool. For more information about this, visit our Privacy Policy page 
+                                             in the sidebar menu"), 
+                                      
+                                      top = 0,
+                                      left = 0,
+                                      right = 0,
+                                      bottom = 0,
+                                      width = 12,
+                                      
+                                      draggable = FALSE
+                                      
+                                        #actionButton(inputId = "m", label = "Proceed", icon = NULL)   ),  ## Conditional Panel for Approval   
+                                      )),
+                                  div(style = "width: 100%; text-align: center;",
+                                      actionButton("clickforassessment", label = "Start Self-assessment Test")
+                                  ))
               
               ),
               # Assessment shown when button is clicked
               conditionalPanel("input.clickforassessment == 1",
-              tags$h2(style= "text-align: center; font-weight: bold; color: #3C8DBC;", "S4E Quality Self-assessment"),                 
-              fluidRow (
+              tags$h1(id = "assess-h1-test", style= "text-align: center; font-weight: bold; color: #3C8DBC;", "S4E Quality Self-assessment"),                 
+              div(role = "region", `aria-labelledby` = "assess-h1-test", id = "assessment-test",
+                        fluidRow (
+                          div(id="sections_select", style = "display: flex; justify-content: center; gap: 10px; height: 100%;",
+                          div(id="select_section0", class="section-box", "Background Information", width=NULL),
+                          div(id="select_section1", class="section-box","Content & Structure", width=NULL),
+                          div(id="select_section2", class="section-box","Implementation", width=NULL),
+                          div(id="select_section3", class="section-box","Evaluation", width=NULL),
+                          div(id="select_section4", class="section-box","Licensing & Ethics", width=NULL)
+                        )),
+                        div(id = "section_theme_container",
+                            uiOutput("progress_bar_ui"),
+                        fluidRow(
+                          box(
+                            id = "self-assessment",
+                            width = 12,
+                            style = "background-color: transparent !important; box-shadow: none; border: none; padding: 0;",
+                            uiOutput("page_ui")
+                            ) 
+                          )
+                        )
+                    ))),
+      tabItem(
+        tabName = "results",
+        tags$h1(
+          id    = "results-h1",
+          style = "text-align: center; font-weight: bold; color: #3C8DBC;",
+          "Your Course Quality Report"
+        ),
+        div(role = "region", `aria-labelledby` = "results-h1", id = "results-main",
+    
+          
+          tags$br(),
+          
+          conditionalPanel(
+            condition = "output.show_results",
+            
+            # Maturity level
+            fluidRow(
+              box(
+                id = "maturitylvl",
+                title = tags$h2("Your course maturity level"),
+                width = 12, status = "primary", solidHeader = TRUE,
+                div(style = "text-align:center;", liveBoxOutput("maturity_level", width = 12))
+              )
+            ),
+            
+            # Scores
+            fluidRow(
+              tabBox(
+                header = tags$span("Your score",
+                                   style = "color: #3C8DBC; font-size: 20px; font-weight: bold;"
+                ),
+                id = "score_detail",
+                side = "right",
+                width = 12,
+                type = "pills",
                 
-                  div(id="sections_select", style = "display: flex; justify-content: center; gap: 10px; height: 100%;",
-                  div(id="select_section0", class="section-box", "Background Information", width=NULL),
-                  div(id="select_section1", class="section-box","Content & Structure", width=NULL),
-                  div(id="select_section2", class="section-box","Implementation", width=NULL),
-                  div(id="select_section3", class="section-box","Evaluation", width=NULL),
-                  div(id="select_section4", class="section-box","Licensing & Ethics", width=NULL)
-                )),
-              div(id = "section_theme_container",
-                  uiOutput("progress_bar_ui"),
+                tabPanel(
+                  id = "scoretotal", "Total score",
+                  box(
+                    width = 12,
+                    liveBoxOutput("score_total", label = "Total score. Displays number of Yes answers out of total questions."),
+                    liveBoxOutput("score_minimal", label = "Minimal Level score. Displays number of Yes answers out of total minimal questions."),
+                    liveBoxOutput("score_detailed", label = "Detailed Level score. Displays number of Yes answers out of total detailed questions.")
+                  )
+                ),
+                
+                tabPanel(
+                  id = "score1", "Score by section",
+                  fluidRow(
+                    tags$br(),
+                    box(
+                      title = "Content & Structure", solidHeader = TRUE, background = NULL,
+                      width = 6, status = "primary",
+                      style = "border-color: #F49200; border-radius: 12px; margin-top:5px;",
+                      liveBoxOutput("score_content_minimal",  width = 6,
+                                    label = "Minimal Level score in section 1. Displays number of Yes answers out of total minimal questions in Content & Structure."),
+                      liveBoxOutput("score_content_detailed", width = 6,
+                                    label = "Detailed Level score in section 1. Displays number of Yes answers out of total detailed questions in Content & Structure.")
+                    ),
+                    box(
+                      title = "Implementation", solidHeader = TRUE, background = NULL,
+                      width = 6, status = "primary",
+                      style = "border-color: #95C11F; border-radius: 12px;",
+                      liveBoxOutput("score_implementation_minimal",  width = 6,
+                                    label = "Minimal Level score in section 2. Displays number of Yes answers out of total minimal questions in Implementation."),
+                      liveBoxOutput("score_implementation_detailed", width = 6,
+                                    label = "Detailed Level score in section 2. Displays number of Yes answers out of total detailed questions in Implementation.")
+                    )
+                  ),
                   fluidRow(
                     box(
-                      id = "self-assessment",
-                      width = 12,
-                      style = "background-color: transparent !important; box-shadow: none; border: none; padding: 0;",
-                      uiOutput("page_ui")
+                      title = "Evaluation", solidHeader = TRUE, background = NULL,
+                      width = 6, status = "primary",
+                      style = "border-color: #1d598a; border-radius: 12px;",
+                      liveBoxOutput("score_evaluation_minimal",  width = 6,
+                                    label = "Minimal Level score in section 3. Displays number of Yes answers out of total minimal questions in Evaluation."),
+                      liveBoxOutput("score_evaluation_detailed", width = 6,
+                                    label = "Detailed Level score in section 3. Displays number of Yes answers out of total detailed questions in Evaluation.")
+                    ),
+                    box(
+                      title = "Licensing & Ethics", solidHeader = TRUE, background = NULL,
+                      width = 6, status = "primary",
+                      style = "border-color: #E6007E; border-radius: 12px;",
+                      liveBoxOutput("score_ethics_minimal",  width = 6,
+                                    label = "Minimal Level score in section 4. Displays number of Yes answers out of total minimal questions in Licensing & Ethics."),
+                      liveBoxOutput("score_ethics_detailed", width = 6,
+                                    label = "Detailed Level score in section 4. Displays number of Yes answers out of total detailed questions in Licensing & Ethics.")
                     )
-                    
-                  )
-              )
-              )),
-      tabItem(tabName = "results",
-              tags$h2(style= "text-align: center; font-weight: bold; color: #3C8DBC;",
-                      "Your Course Quality Report"),
-              tags$br(),
-              conditionalPanel(
-                condition = "output.show_results",
-                fluidRow(
-                  box(id="maturitylvl",
-                      title= "Your course maturity level",
-                      width=12,
-                      status= "primary",
-                      solidHeader=TRUE,
-                      div(
-                        style = "text-align:center;",
-                        valueBoxOutput("maturity_level", width=12))
-                      )),
-                fluidRow(
-                  tabBox(header=tags$span("Your score",
-                                   style = "color: #3C8DBC;; font-size: 20px; font-weight: bold;"),
-                         id="score_detail",
-                         side = "right",
-                         width = 12,
-                         type= "pills",
-                         tabPanel(id="scoretotal", "Total score",
-                                  box(width = 12,
-                                      valueBoxOutput("score_total"),
-                                      valueBoxOutput("score_minimal"),
-                                      valueBoxOutput("score_detailed"))),
-                         tabPanel(id="score1", "Score by section",
-                                  fluidRow(
-                                    tags$br(),
-                                    box(title= "Content & Structure",
-                                      solidHeader = TRUE,
-                                      background = NULL,
-                                      width = 6,
-                                      # centered valueBoxes
-                                      style = "border-color: #F49200; border-radius: 12px; margin-top:5px;",
-                                      status= "primary",
-                                      
-                                      valueBoxOutput("score_content_minimal", width=6),
-                                      valueBoxOutput("score_content_detailed", width=6)
-                                  ),
-                                  box(title= "Implementation",
-                                      width = 6,
-                                      solidHeader = TRUE,
-                                      background = NULL,
-                                      status="primary",
-                                      style = "border-color: #95C11F; border-radius: 12px;",
-                                      valueBoxOutput("score_implementation_minimal", width=6),
-                                      valueBoxOutput("score_implementation_detailed", width=6)
-                                  )),
-                                  fluidRow(
-                                  box(title="Evaluation", 
-                                      width = 6,
-                                      solidHeader = TRUE,
-                                      background = NULL,
-                                      status="primary",
-                                      style = "border-color: #3278B1; border-radius: 12px;",
-                                      valueBoxOutput("score_evaluation_minimal", width=6),
-                                      valueBoxOutput("score_evaluation_detailed", width=6)                     
-                                  ),
-                                  box(title = "Licensing & Ethics",
-                                      solidHeader = TRUE,
-                                      width = 6,
-                                      background = NULL,
-                                      status="primary",
-                                      style = "border-color: #E6007E; border-radius: 12px;",
-                                      valueBoxOutput("score_ethics_minimal", width=6),
-                                      valueBoxOutput("score_ethics_detailed", width=6)
-                                  ))
-                                  ),
-                         tabPanel (id="score2", "Score by sub-framework",
-                                   fluidRow(
-                                     tags$br(),
-                                     box(title= "ESSENTIAL",
-                                         solidHeader = TRUE,
-                                         background = NULL,
-                                         width = 6,
-                                         # centered valueBoxes
-                                         style = "border-color: #F49200; border-radius: 12px;",
-                                         status= "primary",
-                                         
-                                         valueBoxOutput("score_essential_minimal", width=6),
-                                         valueBoxOutput("score_essential_detailed", width=6)
-                                     ),
-                                     box(title= "FAIR",
-                                         width = 6,
-                                         solidHeader = TRUE,
-                                         background = NULL,
-                                         status="primary",
-                                         style = "border-color: #95C11F; border-radius: 12px;",
-                                         valueBoxOutput("score_fair_minimal", width=6),
-                                         valueBoxOutput("score_fair_detailed", width=6)
-                                     )),
-                                   fluidRow(
-                                     box(title="MVS", 
-                                         width = 6,
-                                         solidHeader = TRUE,
-                                         background = NULL,
-                                         status="primary",
-                                         style = "border-color: #3278B1; border-radius: 12px;",
-                                         valueBoxOutput("score_mvs_minimal", width=6),
-                                         valueBoxOutput("score_mvs_detailed", width=6)                     
-                                     ),
-                                     box(title = "ELSI",
-                                         solidHeader = TRUE,
-                                         width = 6,
-                                         background = NULL,
-                                         status="primary",
-                                         style = "border-color: #E6007E; border-radius: 12px;",
-                                         valueBoxOutput("score_elsi_minimal", width=6),
-                                         valueBoxOutput("score_elsi_detailed", width=6)
-                                     )))
-                         
-                      )),
-                fluidRow(
-                  box(id="score3",
-                      title= "Visualizing your score",
-                      width=12,
-                      status= "primary",
-                      solidHeader=TRUE,
-                      plotOutput("score_plot", height= "600px"))
-                ),
-
-                fluidRow(
-                  box(title = "How can you ymprove the quality of your course?",
-                      width = 12,
-                      status = "primary",
-                      solidHeader = TRUE,
-                      DT::dataTableOutput("Best_practices")
                   )
                 ),
-                fluidRow(
-                  box(
-                    title = "Your Answers",
-                    width = 12,
-                    status = "primary",
-                    solidHeader = TRUE,
-                    DT::dataTableOutput("results_table")
+                
+                tabPanel(
+                  id = "score2", "Score by sub-framework",
+                  fluidRow(
+                    tags$br(),
+                    box(
+                      title = "ESSENTIAL", solidHeader = TRUE, background = NULL,
+                      width = 6, status = "primary",
+                      style = "border-color: #F49200; border-radius: 12px;",
+                      liveBoxOutput("score_essential_minimal",  width = 6,
+                                    label = "Minimal Level score in the Essential Subframework. Displays number of Yes answers out of total minimal questions in Essential."),
+                      liveBoxOutput("score_essential_detailed", width = 6,
+                                    label= "Detailed Level score in the Essential Subframework. Displays number of Yes answers out of total detailed questions in Essential.")
+                    ),
+                    box(
+                      title = "FAIR", solidHeader = TRUE, background = NULL,
+                      width = 6, status = "primary",
+                      style = "border-color: #95C11F; border-radius: 12px;",
+                      liveBoxOutput("score_fair_minimal",  width = 6,
+                                    label= "Minimal Level score in the FAIR Subframework. Displays number of Yes answers out of total minimal questions in FAIR"),
+                      liveBoxOutput("score_fair_detailed", width = 6,
+                                    "Detailed Level score in the FAIR subframework. Displays number of Yes answers out of total detailed questions in FAIR.")
+                    )
+                  ),
+                  fluidRow(
+                    box(
+                      title = "MVS", solidHeader = TRUE, background = NULL,
+                      width = 6, status = "primary",
+                      style = "border-color: #1d598a; border-radius: 12px;",
+                      liveBoxOutput("score_mvs_minimal",  width = 6,
+                                    label= "Minimal Level score in the MVS Subframework. Displays number of Yes answers out of total minimal questions in MVS."),
+                      liveBoxOutput("score_mvs_detailed", width = 6,
+                                    label= "Detailed Level score in the MVS Subframework. Displays number of Yes answers out of total detailed questions in MVS.")
+                    ),
+                    box(
+                      title = "ELSI", solidHeader = TRUE, background = NULL,
+                      width = 6, status = "primary",
+                      style = "border-color: #E6007E; border-radius: 12px;",
+                      liveBoxOutput("score_elsi_minimal",  width = 6,
+                                    label= "Minimal Level score in the ELSI Subframework. Displays number of Yes answers out of total minimal questions in ELSI."),
+                      liveBoxOutput("score_elsi_detailed", width = 6,
+                                    label= "Detailed Level score in the ELSI Subframework. Displays number of Yes answers out of total detailed questions in ELSI")
+                    )
                   )
                 )
-              )),
+              )
+            ),
+            
+            # Plot
+            fluidRow(
+              box(
+                id = "score3", title = "Visualizing your score",
+                width = 12, status = "primary", solidHeader = TRUE,
+                plotOutput("score_plot", height = "600px")
+              )
+            ),
+            
+            # Best practices
+            fluidRow(
+              box(
+                title = "How can you improve the quality of your course?",
+                width = 12, status = "primary", solidHeader = TRUE,
+                DT::dataTableOutput("Best_practices")
+              )
+            ),
+            
+            # Answers
+            fluidRow(
+              box(
+                title = "Your Answers",
+                width = 12, status = "primary", solidHeader = TRUE,
+                DT::dataTableOutput("results_table")
+              )
+            )
+          ) # conditionalPanel
+        )   # main
+      )
+      ,
       tabItem(tabName = "generalfeedback",
+              tags$h1(id="gf-h1", class="sr-only", "Introduction to General Feedback Survey"),
+              
+              div(role="region", `aria-labelledby`="gf-h1", id="gf-main",
+              
               # Panel shown by default, hidden survey until button "clickforsurvey" is clicked
               conditionalPanel("input.clickforsurvey == 0", 
                                
@@ -896,8 +1295,9 @@ body, .wrapper, .content-wrapper, .right-side {
                                    ))
                                  ),
               conditionalPanel("input.clickforsurvey == 1",
-                               tags$h3(style= "text-align: center; font-weight: bold; color: #3C8DBC;", "General Feedback survey" ),                 
-                               
+                               tags$h1(id="gf-h1-active",
+                                       style="text-align:center; font-weight:bold; color:#3C8DBC;",
+                                       "General Feedback survey"),
                                uiOutput("progress_bar2_ui"),
                                fluidRow(id= "general-feedback-container",
                                  box(
@@ -905,75 +1305,121 @@ body, .wrapper, .content-wrapper, .right-side {
                                    width = 12,
                                    style = "background-color: transparent !important;
                                    box-shadow: none; border: none; padding: 0;",
-                                   uiOutput("feedback_ui")
-                                 ))
+                                   uiOutput("feedback_ui"))
+                                 )
                                )
+              )
       ),
       
       tabItem(tabName = "terms",
+              tags$h1(id="terms-h1", class="sr-only", "Terms of Service"),
+              div(role="region", `aria-labelledby`="terms-h1", id="terms-main",
               fluidRow(
-                box(title = "Terms of Service", width = 12,
-                    htmlOutput("terms_content"))
-              )
+                box(title = tags$h2("Terms of Service"), status = "primary",
+                    style="overflow:auto;",
+                    solidHeader = TRUE, width = 12, htmlOutput("terms_content"))
+              ))
       ),
       
       tabItem(tabName = "privacy",
+              tags$h1(id="privacy-h1", class="sr-only", "Privacy Policy"),
+              div(role="region", `aria-labelledby`="privacy-h1", id="privacy-main",
               fluidRow(
-                box(title = "Privacy Policy", width = 12,
-                    htmlOutput("privacy_content"))
-              )
+                box(title = tags$h2("Privacy Policy"), status = "primary",
+                    solidHeader = TRUE, width = 12, htmlOutput("privacy_content"))
+              ))
       )
       
       
       
-      )),
+      ))),
     
     
     
 
   footer= dashboardFooter(
+    
     left= tags$div(style= "font-size: 10px; padding:5px; padding-top:10px;position:relative;", 
                    p("Except where otherwise noted, content on this site is licensed 
                             under a", style= "display:inline;"),
                    a(href= "https://creativecommons.org/licenses/by/4.0/", "Creative Commons Attribution 4.0 
                             International License."),
                    a(href= "https://creativecommons.org/licenses/by/4.0/", 
-                     tags$img(src="cc-by.png", title = "CC-by 4.0 License",
+                     tags$img(src="cc-by.png", alt = "Image of CC-by 4.0 License", title ="CC-by 4.0",
                               height = "15px")),
                    p(" Sanchez-Moreno, M. ",style= "display:inline;"),
-                   a(href = "https://orcid.org/0000-0003-2148-2494",
-                   tags$img(src = "orcid_logo.png",
-                            title = "Orcid profile",
-                            height = "15px"
-                            )),
+                   a(
+                     href = "https://orcid.org/0000-0003-2148-2494",
+                     `aria-label` = "ORCID profile of Sanchez-Moreno, M.",
+                     rel  = "noopener noreferrer",
+                     tags$img(
+                       src = "orcid_logo.png",
+                       alt = "",
+                       title = "ORCID profile",
+                       height = "15px"
+                     )),
                   p(" (2025). S4E Quality Compass app (1.0.0).", style= "display:inline;")),
 
-    right= tags$div(style="padding:8px; margin-top: 0px; position:relative; z-index:10; pointer-events:auto;",
-                    # Important! Set pointer-events:auto; otherwise images links don't work
-                    a(href = "https://www.skills4eosc.eu/",
-                      tags$img(src="logo_S4E_pos_ext.png",  
-                               title = "Skills4EOSC project", 
-                               height = "30px")
-                      ),
-                    a(href = "https://eosc.eu/",
-                      tags$img(src="logo_eosc_ext.jpeg",  
-                               title = "EOSC Association", 
-                               height = "30px")
-                    ),
-                    a(href = "https://ec.europa.eu/regional_policy/home_en",
-                      tags$img(src="logo_eu_trans.png",  
-                               title = "Co-funded by the European Union", 
-                               height = "30px")
-                    ),
-                    a(href = "https://www.uc3m.es/home",
-                      tags$img(src="logo_uc3m_pos_ext.png",  
-                               title = "Carlos III University of Madrid", 
-                               height = "30px")
-                    )
+    right = tags$div(
+      id = "footer-right",
+      style = "padding:8px; margin-top:0; position:relative; z-index:10; pointer-events:auto;",
+      
+      a(
+        href = "https://www.skills4eosc.eu/",
+        `aria-label` = "Skills4EOSC website",
+        target = "_blank", rel = "noopener noreferrer",
+        tags$img(
+          src = "logo_S4E_pos_ext.png",
+          alt = "",
+          title = "Skills4EOSC project",
+          height = "44px"
+        )
+      ),
+      
+      a(
+        href = "https://eosc.eu/",
+        `aria-label` = "EOSC Association website",
+        target = "_blank", rel = "noopener noreferrer",
+        tags$img(
+          src = "logo_eosc_ext.jpeg",
+          alt = "",
+          title = "EOSC Association",
+          height = "44px"
+        )
+      ),
+      
+      a(
+        href = "https://ec.europa.eu/regional_policy/home_en",
+        `aria-label` = "European Union Regional Policy website",
+        target = "_blank", rel = "noopener noreferrer",
+        tags$img(
+          src = "logo_eu_trans.png",
+          alt = "",
+          title = "Co-funded by the European Union",
+          height = "44px"
+        )
+      ),
+      
+      a(
+        href = "https://www.uc3m.es/home",
+        `aria-label` = "Carlos III University of Madrid website",
+        target = "_blank", rel = "noopener noreferrer",
+        tags$img(
+          src = "logo_uc3m_pos_ext.png",
+          alt = "",
+          title = "Carlos III University of Madrid",
+          height = "44px"
+        )
+      )
+    )
     
-  ))
+    
+  )
     
 )
+
+# Set language attribute
+
 
 ## SERVER
 
@@ -1070,19 +1516,21 @@ server <- function(input, output, session) {
   
   output$terms_content <- renderUI({
     tags$iframe(
-      src = "./ToS.html",  
+      src   = "./ToS.html",
+      title = "Terms of Service",
       width = "100%",
-      height = "600px",
-      style = "border:none;"
+      style = "border:none; width:100%; height:1px; min-height:60vh; overflow:auto;!important",
+      `data-autosize` = "true"
     )
   })
   
   output$privacy_content <- renderUI({
     tags$iframe(
-      src = "./Privacy-Policy.html",  
+      src   = "./Privacy-Policy.html",
+      title = "Privacy Policy",
       width = "100%",
-      height = "600px",
-      style = "border:none;"
+      style = "border:none; width:100%; height:1px; min-height:60vh;",
+      `data-autosize` = "true"
     )
   })
   
@@ -1101,20 +1549,19 @@ server <- function(input, output, session) {
   
   # Dinamic sidebar (hidden results tab until self-assessment is complete)
   output$dynamic_sidebar <- renderMenu({
-    sidebarMenu(id = "sidebarMenuid", selected = "about",
-                menuItem("About", tabName = "about", icon = icon("home")),
-                menuItem("Quality Self-assessment Test", tabName = "assessment", icon = icon("list-check")),
-                if (submission_complete()) {
-                  menuItem("Results", tabName = "results", icon = icon("chart-bar"))
-                },
-                menuItem("General Feedback", tabName = "generalfeedback", icon = icon("comments")),
-                
-                ## --- Spacer and legal section ---
-                tags$hr(style = "border-top: 1px solid #999; margin: 20px 0;"),
-                
-                menuItem("Terms of Service", tabName = "terms", icon = icon("file-contract")),
-                menuItem("Privacy Policy", tabName = "privacy", icon = icon("user-shield"))
-                
+    tagList(
+      sidebarMenu(id = "sidebarMenuid", selected = "about",
+                  menuItem("About", tabName = "about", icon = icon_dec("home")),
+                  menuItem("Quality Self-assessment", tabName = "assessment", icon = icon_dec("list-check")),
+                  if (submission_complete()) menuItem("Results", tabName = "results", icon = icon_dec("chart-bar")),
+                  menuItem("General Feedback", tabName = "generalfeedback", icon = icon_dec("comments"))
+      ),
+      # Spacer and legal docs section
+      tags$hr(style = "border-top: 1px solid #999; margin: 20px 0;"),
+      sidebarMenu(
+        menuItem("Terms of Service", tabName = "terms", icon = icon_dec("file-contract")),
+        menuItem("Privacy Policy", tabName = "privacy", icon = icon_dec("user-shield"))
+      )
     )
   })
   
@@ -1150,28 +1597,35 @@ server <- function(input, output, session) {
     categories <- unique(page_data$category)
     section_colors <- c(
       "0. Background information" = "#333333",
-      "1. Content & Structure" = "#F49200",
-      "2. Implementation" = "#95C11F",
-      "3. Evaluation" = "#3278B1",
-      "4. Licensing & Ethics" = "#E6007E"
+      "1. Content & Structure"    = "#b35b04",
+      "2. Implementation"         = "#5D7E02",
+      "3. Evaluation"             = "#1d598a",
+      "4. Licensing & Ethics"     = "#BD0068"
     )
     
-    
-    # Page Title box (remove the index at the beginning)
-    title_div <- tags$h3(
-      style = "margin-bottom: 1em; text-align: center; font-weight:bold;",
-      sub("^\\d+\\.\\s*", "", current_page())
+    # Page title (visual)
+    title_div <- tagList(
+      tags$h2(
+        id = "section-title",
+        `aria-describedby` = "section-title-desc",
+        style = "margin-bottom: 1em; text-align: center; font-weight:bold;",
+        sub("^\\d+\\.\\s*", "", current_page())
+      ),
+      tags$p(
+        id = "section-title-desc",
+        class = "sr-only",
+        "This section lists the questions for the selected part of the self‑assessment."
+      )
     )
-    
     
     # Loop over categories
     category_boxes <- lapply(categories, function(cat) {
       cat_data <- page_data %>% filter(category == cat)
       
-      # Rebuild the header row for each category box
+      # Header row for columns
       header_row <- div(
         style = "display: flex; flex-wrap: wrap; font-weight: bold; 
-              margin-bottom: 1em; gap: 1.2em; padding-left: 2px;",
+               margin-bottom: 1em; gap: 1.2em; padding-left: 2px;",
         div(style = "flex: 0 0 15%; min-width: 70px; text-align: center;", "Feedback"),
         div(style = "flex: 0 0 15%; min-width: 70px; text-align: center;", "Help notes"),
         div(style = "flex: 1; min-width: 200px;", "Question")
@@ -1179,109 +1633,139 @@ server <- function(input, output, session) {
       
       # Questions within the category
       question_ui <- lapply(seq_len(nrow(cat_data)), function(i) {
-        row <- cat_data[i, ]
-        qid <- row$input_id
+        row   <- cat_data[i, ]
+        qid   <- row$input_id
         inputId <- paste0("q_", qid)
         
-        
+        # Dependency visibility
         show_question <- TRUE
         if (!is.na(row$dependence) && nzchar(row$dependence)) {
           parent_val <- input[[paste0("q_", row$dependence)]]
-          if (is.null(parent_val) || parent_val != row$dependence_value) {
-            show_question <- FALSE
-          }
+          if (is.null(parent_val) || parent_val != row$dependence_value) show_question <- FALSE
         }
         if (!show_question) return(NULL)
         
-        # <<- operator increments visible_index globally within the page, not by category
+        # Increment visual index (for numbering in label text)
         visible_index <<- visible_index + 1
         
-        asterisk <- if (isTRUE(row$required)) {
-          tags$span("*", style = "color:red; margin-left:5px;")
-        } else NULL
+        # Required marker (visual asterisk if you ever show labels visually)
+        asterisk <- if (isTRUE(row$required)) tags$span("*", style = "color:red; margin-left:5px;") else NULL
         
-        label_question <- tags$b(
-          # Put numeration, question text and asterisk (not displayed, no required questions)
-          # By adding HTML(), we render the links (in MVS related questions) 
-          tagList(HTML(paste0(visible_index, ". ", row$question)), asterisk)
-        )
+        # Build *text* for the label that SR will read
+        label_text <- HTML(paste0(visible_index, ". ", row$question))
         
-        help_icon <- if (!is.na(row$notes) && nzchar(row$notes)) {
+        # Unique ids for accessible associations
+        label_id <- paste0(inputId, "-label")
+        help_id  <- paste0("help_note_", qid)
+        
+        # Help button (popover trigger)
+        help_btn <- if (!is.na(row$notes) && nzchar(row$notes)) {
           shinyBS::bsButton(
             inputId = paste0("help_icon_", qid),
-            label = NULL,
-            icon = icon("circle-info"),
-            style = "info",
-            size = "extra-small"
+            label   = NULL,
+            icon    = icon_dec("circle-info"),
+            style   = "info",
+            size    = "extra-small"
+          ) |> htmltools::tagAppendAttributes(
+            `aria-label`   = "Show help note for this question",
+            `aria-describedby` = help_id
           )
         } else NULL
         
+        # Feedback flag (decorative icon-only button, already ARIA-labelled)
+        has_feedback <- !is.null(feedback_store[[qid]])
+        flag_icon <- if (has_feedback) {
+          icon_dec("flag", class = "fa-solid",  style = "color:red;")
+        } else {
+          icon_dec("flag", class = "fa-regular", style = "color:red;")
+        }
+        flag_id     <- paste0("flag_", qid)
+        flag_label  <- if (has_feedback) "Feedback submitted. Edit feedback" else "Flag this question and add feedback"
+        flag_pressed <- if (has_feedback) "true" else "false"
+        feedback_button <- actionButton(
+          inputId = flag_id, label = NULL, icon = flag_icon,
+          style   = "background: none; border: none;", class = "pull-left"
+        ) |> htmltools::tagAppendAttributes(
+          `aria-label`   = flag_label,
+          `aria-pressed` = flag_pressed,
+          title          = flag_label
+        )
+        
+        # Options for controls
         choices <- if (row$input_type %in% c("mc", "select", "textSlider") && !is.na(row$options)) {
           trimmed <- trimws(unlist(strsplit(row$options, ";")))
           if (length(trimmed) == 0) NULL else trimmed
         } else NULL
         
-        has_feedback <- !is.null(feedback_store[[qid]])
-        flag_icon <- if (has_feedback) {
-          icon("flag", class = "fa-solid", style = "color:red;")
-        } else {
-          icon("flag", class = "fa-regular", style = "color:red;")
-        }
-        tooltip_title <- if (has_feedback) "Feedback submitted" else "Flag this question"
-        feedback_button <- actionButton(
-          inputId = paste0("flag_", qid),
-          label = NULL,
-          icon = flag_icon,
-          style = "background: none; border: none;",
-          class = "pull-left",
-          title = tooltip_title
-        )
-        
+        # Build the input with SR-only labeling per type
         input_ui <- switch(
           row$input_type,
-          "mc" = checkboxGroupInput(
+          
+          # Multiple choice (checkbox group) -> use fieldset + legend (SR-only)
+          "mc" = tags$fieldset(
+            `aria-describedby` = if (!is.null(help_btn)) help_id else NULL,
+            tags$legend(tags$span(id = label_id, class = "sr-only", tagList(label_text, asterisk))),
+            checkboxGroupInput(
+              inputId  = inputId,
+              label    = NULL,  # legend serves as label
+              choices  = choices,
+              selected = isolate(input[[inputId]]) %||% character(0)
+            )
+          ),
+          
+          # Free text -> use SR-only label via label= param
+          "text" = textInput(
             inputId = inputId,
-            label = NULL,
+            label   = tags$span(id = label_id, class = "sr-only", tagList(label_text, asterisk)),
+            value   = isolate(input[[inputId]]) %||% ""
+          ),
+          
+          # Slider with text ticks -> SR-only label
+          "textSlider" = shinyWidgets::sliderTextInput(
+            inputId = inputId,
+            label   = tags$span(id = label_id, class = "sr-only", tagList(label_text, asterisk)),
             choices = choices,
+            force_edges = TRUE
+          ),
+          
+          # Select -> SR-only label
+          "select" = selectInput(
+            inputId  = inputId,
+            label    = tags$span(id = label_id, class = "sr-only", tagList(label_text, asterisk)),
+            choices  = choices,
             selected = isolate(input[[inputId]]) %||% character(0)
           ),
           
-          "text" = textInput(inputId = inputId, label = NULL, value = isolate(input[[inputId]]) %||% ""),
-          "textSlider" = shinyWidgets::sliderTextInput(inputId = inputId, label = NULL,
-                                                       choices = choices, force_edges = TRUE),
-          "select" = selectInput(inputId = inputId, label = NULL, choices = choices,
-                                 selected = isolate(input[[inputId]]) %||% character(0)),
+          # Fallback (debug)
           div(style = "color:red;", paste("Unsupported input_type:", row$input_type))
         )
         
-        # Question row layout
+        # If there *is* a help note, output an SR-only description element to reference
+        help_desc <- if (!is.na(row$notes) && nzchar(row$notes)) {
+          tags$span(id = help_id, class = "sr-only", HTML(row$notes))
+        } else NULL
+        
+        # Row layout
         div(
           style = "margin-bottom: 2em; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 1.2em;",
           div(style = "flex: 0 0 15%; min-width: 70px; display: flex; justify-content: center;", feedback_button),
           div(style = "flex: 0 0 15%; min-width: 70px; display: flex; align-items: center; justify-content: center;",
-              if (!is.null(help_icon)) help_icon else NULL),
+              if (!is.null(help_btn)) help_btn else NULL),
           div(style = "flex: 1; min-width: 200px;",
-              label_question,
+              # Optional visible heading retained as bold text (NOT the label)
+              tags$b(tagList(label_text, asterisk)),
+              help_desc,                                # SR-only extra description if any
               div(style = "margin-top: 0.5em;", input_ui))
         )
       })
-      if (current_page() %in% names(section_colors)) {
-        section_color <- section_colors[[current_page()]]
-      } else {
-        section_color <- "#3278B1"  # Fallback color (blue)
-      }
       
+      section_color <- if (current_page() %in% names(section_colors)) section_colors[[current_page()]] else "#1d598a"
       
       tagList(
-        
         box(
-          width = 12,
-          title = NULL,        # No header 
-          solidHeader = FALSE, # No default box header s
-          collapsible = FALSE,
+          width = 12, title = NULL, solidHeader = FALSE, collapsible = FALSE,
           style = "background-color: transparent; border: none; box-shadow: none; padding: 0;",
-          
-          # Custom category header outside the box
+          # Category header
           div(
             style = paste0(
               "background-color:", section_color, ";",
@@ -1290,32 +1774,24 @@ server <- function(input, output, session) {
             ),
             cat
           ),
-          
           header_row,
           do.call(tagList, question_ui)
         )
       )
-      
-      
-      
-      
     })
     
     # Navigation buttons
     nav_buttons <- tagList(
       div(
-      textOutput("error_message"),
-      tags$style("#error_message { color: red; font-weight: bold; margin-bottom: 1em; }"),
-      if (which(pages == current_page()) > 1)
-        actionButton("prev_page", "Previous"),
-      if (which(pages == current_page()) < length(pages))
-        actionButton("next_page", "Next"),
-      if (which(pages == current_page()) == length(pages))
-        actionButton("submit", "Submit")
-    ))
+        textOutput("error_message"),
+        tags$style("#error_message { color: red; font-weight: bold; margin-bottom: 1em; }"),
+        if (which(pages == current_page()) > 1) actionButton("prev_page", "Previous"),
+        if (which(pages == current_page()) < length(pages)) actionButton("next_page", "Next"),
+        if (which(pages == current_page()) == length(pages)) actionButton("submit", "Submit")
+      )
+    )
     
     runjs("Shiny.setInputValue('page_ui_ready', new Date().getTime());")
-    
     
     tagList(
       title_div,
@@ -1323,6 +1799,7 @@ server <- function(input, output, session) {
       nav_buttons
     )
   })
+  
   
   
   observeEvent(input$page_ui_ready, {
@@ -1337,7 +1814,8 @@ server <- function(input, output, session) {
           title = "Note",
           content = HTML(row$notes),
           placement = "center",
-          trigger = "click"
+          trigger   = "click",     
+          options   = list(container = "body")
         )
       }
     }
@@ -1375,17 +1853,29 @@ server <- function(input, output, session) {
   
   
   ## PROGRESS BAR
-  # Show only when it its not in page 1 (Background info)
+  # Show only when it's not in page 1 (Background info)
   output$progress_bar_ui <- renderUI({
      
     if (current_page() != pages[1]) {
       
       tagList(
         div(id = "progress_container",
+            # SR-only label (description)
+            tags$span(id = "progress_label", class = "sr-only",
+                      "Assessment progress"),
             div(class = "progress",
-                div(id = "progress_bar", class = "progress-bar",
-                    role = "progressbar", style = "width: 0%;",
-                    "0% Completed"
+                div(
+                  id = "progress_bar",
+                  class = "progress-bar",
+                  role = "progressbar",
+                  `aria-labelledby` = "progress_label",
+                  `aria-valuemin` = "0",
+                  `aria-valuemax` = "100",
+                  `aria-valuenow`  = "0",
+                  # This is the live text SR will get
+                  `aria-live` = "polite",
+                  style = "width: 0%;",
+                  "0% Completed"
                 )
             )
         )
@@ -1415,29 +1905,39 @@ server <- function(input, output, session) {
   observe({
     percent <- get_completion_percent()
     runjs(sprintf("
-      $('#progress_bar').css('width', '%s%%');
-      $('#progress_bar').attr('aria-valuenow', %s);
-      $('#progress_bar').text('%s%% Completed');
-    ", percent, percent, percent))
+    var bar = $('#progress_bar');
+    bar.css('width', '%1$s%%');
+    bar.attr('aria-valuenow', %1$s);
+    // Friendly text for SR, e.g., '72 percent completed'
+    bar.attr('aria-valuetext', '%1$s percent completed');
+    // Visible text for sighted users
+    bar.text('%1$s%% Completed');
+  ", percent))
   })
   
+  
+  # Feedback modals for all questions
   # Feedback modals for all questions
   observe({
     lapply(survey$input_id, function(qid) {
       question_text <- survey$question[survey$input_id == qid]
+      
+      # Open modal on click of the flag button
       observeEvent(input[[paste0("flag_", qid)]], {
         showModal(modalDialog(
           title = div(
             "Feedback to question:",
-            tags$div(style = "font-weight: normal; font-size: 90%; margin-top: 4px;", 
-                     tags$i(question_text))
+            tags$div(
+              style = "font-weight: normal; font-size: 90%; margin-top: 4px;", 
+              tags$i(question_text)
+            )
           ),
           textAreaInput(
             inputId = paste0("temp_feedback_", qid),
-            label = "Provide your comment below:",
-            value = feedback_store[[qid]] %||% "",
-            width = "100%",
-            height = "120px"
+            label   = "Provide your comment below:",
+            value   = feedback_store[[qid]] %||% "",
+            width   = "100%",
+            height  = "120px"
           ),
           footer = tagList(
             modalButton("Cancel"),
@@ -1445,19 +1945,55 @@ server <- function(input, output, session) {
           ),
           easyClose = TRUE
         ))
-        
-        
       })
       
+      # Save feedback, close modal, and update the icon + accessibility attributes
       observeEvent(input[[paste0("send_feedback_", qid)]], {
         val <- input[[paste0("temp_feedback_", qid)]]
-        if (!is.null(val) && nzchar(val)) {
+        has <- !is.null(val) && nzchar(val)
+        
+        if (has) {
           feedback_store[[qid]] <- val
+        } else {
+          feedback_store[[qid]] <- NULL
         }
         removeModal()
+        
+        # Rebuild the button id locally (this fixes the scope error)
+        flag_id    <- paste0("flag_", qid)
+        aria_label <- if (has) "Feedback submitted. Edit feedback"
+        else      "Flag this question and add feedback"
+        
+        # Swap icon style (regular ↔ solid) + update ARIA state/label + title
+        # We rely on the <i> inside the actionButton to toggle Font Awesome class.
+        shinyjs::runjs(sprintf("
+        (function(){
+          var $btn = $('#%1$s');
+          var $icon = $btn.find('i.fa-flag');
+
+          if (%2$s) {
+            $icon.removeClass('fa-regular').addClass('fa-solid');
+          } else {
+            $icon.removeClass('fa-solid').addClass('fa-regular');
+          }
+
+          $btn.attr({
+            'aria-pressed': %3$s,
+            'aria-label'  : %4$s,
+            'title'       : %4$s
+          });
+        })();
+      ",
+                               flag_id,
+                               if (has) "true" else "false",             # %2$s toggle to solid?
+                               if (has) "'true'" else "'false'",         # %3$s aria-pressed
+                               jsonlite::toJSON(aria_label, auto_unbox = TRUE)  # %4$s safe string
+        ))
       })
     })
   })
+  
+  
   
   # Section highlighting
   section_map <- setNames(
@@ -1615,6 +2151,9 @@ server <- function(input, output, session) {
           results_df,
           extensions = 'Buttons',
           escape = FALSE,
+          caption = htmltools::tags$caption(
+            style = "caption-side: top; text-align: left;",
+            "Table: Your answers by section and subframework."),
           options = list(
             dom = "Bfrtip",
             buttons = c("copy", "csv", "excel", "pdf", "print"),
@@ -1839,6 +2378,9 @@ server <- function(input, output, session) {
     DT::datatable(
       filtered,
       escape = FALSE,
+      caption = htmltools::tags$caption(
+        style = "caption-side: top; text-align: left;",
+        "Table: Suggested best practices for questions answered No or left unanswered."),
       options = list(
         dom = "Bfrtip",
         buttons = c("copy", "csv", "excel", "pdf", "print"),
@@ -2013,10 +2555,11 @@ server <- function(input, output, session) {
         
         input_ui <- switch(
           row$input_type,
-          "mc" = radioButtons(input_id, NULL, choices = choices, inline = FALSE),
-          "select" = selectInput(input_id, NULL, choices = choices),
-          "textSlider" = shinyWidgets::sliderTextInput(input_id, NULL, choices = choices, force_edges = TRUE),
-          "text" = textAreaInput(input_id, NULL, placeholder = "Type your answer here...", height = "100px"),
+          "mc" = radioButtons(input_id, label="Select your answer", choices = choices, inline = FALSE),
+          "select" = selectInput(input_id, label=tags$span("Select your experience", class="sr-only"), choices = choices),
+          "textSlider" = shinyWidgets::sliderTextInput(input_id, 
+                                                       label=tags$span("Select your knowledge or opinion", class="sr-only"), choices = choices, force_edges = TRUE),
+          "text" = textAreaInput(input_id, label=tags$span("Your answer", class="sr-only"), placeholder = "Type your answer here...", height = "100px"),
           NULL
         )
         
@@ -2044,7 +2587,7 @@ server <- function(input, output, session) {
           ; border-radius: 6px;",
           div(
             style = paste0(
-              "background-color:#3278B1; color: white; font-weight: bold;
+              "background-color:#1d598a; color: white; font-weight: bold;
               font-size: 18px; padding: 10px 15px; border-radius: 6px; margin-bottom: 0.5em; margin-top: 1em;"
             ),
             cat
@@ -2115,11 +2658,12 @@ server <- function(input, output, session) {
   # checklist iframe (about page)
   output$checklist <- renderUI({
     tags$iframe(
-      title = "Checklist",
+      title = "S4E Checklist & Guide",
       src = "https://view.genially.com/682d8981d26d435becb916c6",
       type = "text/html",
       width = "100%",
-      style = "max-width: 100%; height: auto;"
+      style = "max-width: 100%; height: auto;",
+      tabindex = "0" # Focusable
     )
   })
 
