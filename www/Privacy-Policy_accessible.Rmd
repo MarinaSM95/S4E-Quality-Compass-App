@@ -1,0 +1,285 @@
+---
+title: "Privacy Policy"
+author: 
+  - "Marina Sánchez Moreno"
+  - "Valentina Colcelli"
+date: "2025-07-30"
+lang: en
+output:
+  html_document:
+    self_contained: true
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+    number_sections: false
+    section_divs: true
+    theme: flatly   
+    df_print: paged
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.align = "center"
+)
+```
+
+<!-- ========================= Accessibility: skip link ========================= -->
+<a href="#main-content" class="skip-link sr-only">Skip to main content</a>
+<!-- Document’s content in a <main> landmark --> 
+<main id="main-content" tabindex="-1" role="main" aria-labelledby="doc-title">
+<span id="doc-title" class="sr-only">Privacy Policy</span>
+<!-- Short summary to avoid heading-next-to-heading errors -->
+<p class="lede sr-only">This page explains what data we collect, why we collect it, how it’s used, and your rights.</p> 
+
+
+
+
+```{css, echo=FALSE}
+.title, .author, .date  { display: none; }
+h2{
+text-align: center; font-weight: bold; color: #1d5380;
+}
+h3{
+background-color: #1d5380;
+color: white; 
+font-weight: bold; font-size: 18px;
+padding: 1em; border-radius: 6px; margin-bottom: 0.5em;
+}
+h4{
+font-weight: bold;
+}
+a{color: #0645AD; text-decoration: underline; }
+a:hover{color: #1d5380 ; text-decoration: none; }
+
+.sr-only {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0);
+  white-space: nowrap; border: 0;
+}
+
+```
+
+
+<br>
+
+
+## Information on the Processing of Personal Data, in conformity with EU Regulation 2016/679 (GDPR)
+<br>
+
+This information is provided according to EU Regulation N. 2016/679, to those who interact
+with the TERMS OF SERVICE accessible electronically at the address [https://csslab.uc3m.es/shiny/S4E-Quality-Compass-App/](https://csslab.uc3m.es/shiny/S4E-Quality-Compass-App/).
+
+
+
+### INTRODUCTION
+
+This document explains what information is collected when you use our app, as well as
+how and why this information is collected and used.
+
+We take your privacy seriously and proactively ensure the necessary steps to protect
+your personal data. The information presented is intended solely for our app and not 
+for other Apps that may be accessed through links within the App.
+
+
+
+#### Contacts
+
+**Service Provider**
+
+The S4E Quality Compass app is operated and maintained by:
+
+Universidad Carlos III de Madrid (UC3M)
+Calle Madrid, 126
+28903 Getafe, Madrid, Spain
+App: [https://www.uc3m.es](https://www.uc3m.es)
+UC3M acts as the hosting and service provider for the S4E Quality Compass app within
+the framework of the Skills4EOSC project, funded under Horizon Europe.
+
+**Data Controller**
+
+The data controller responsible for processing the information submitted via the app
+(including user background information, quality self-assessment answers and optional
+user feedback) is:
+
+Universidad Carlos III de Madrid
+Institutional email: [marinasa@pa.uc3m.es](mailto:marinasa@pa.uc3m.es)
+Project: Skills4EOSC – Task 2.4 Lead
+
+**Skills4EOSC Contact Point**
+
+According to the internal organisation of Project: Skills4EOSC (Task 2.4 partner),
+the Skills4EOSC Contact Point for the personal data treatment is also:
+
+Iñaki Ucar Marqués
+Universidad Carlos III de Madrid
+Institutional email: [inaki.ucar@uc3m.es](mailto:inaki.ucar@uc3m.es)
+
+
+
+### PERSONAL DATA PROCESSED
+
+<br>
+
+#### Navigation data
+
+Computer systems and the applicative elements dedicated to the operation of this App
+record/register, during their normal performance, several data (the transmission of
+which is implicit in the use of communication protocols of Internet communication) 
+not associated with directly identifiable users.
+
+Among the data collected are included the IP addresses of the computer utilised by
+users who are interconnected with the site, the addresses in URI (URI (Uniform Resource
+Identifier) notation of the resources requested, the time of the request, the method
+used in submitting the request to the server, the dimensions of the file obtained in
+answer, the numerical code indicating the state of the reply given by the server 
+(successful, error, etc.), and other parameters regarding the operative system and
+the computer environment utilised by the user.
+
+These data are processed for the amount of time strictly necessary and solely for 
+the purpose of generating anonymous statistical information on the site's use and 
+to ensure its regular operation.
+
+
+
+### WE USE COOKIES
+<br>
+
+#### What are cookies?
+
+Cookies are pairs of strings of the type (name, value) that Apps send to the user’s
+browser with the aim of memorising information of various types in the said browser.
+This information will then be retransmitted by the browser in future accesses to the 
+same App.
+
+For further and complete information on the use of cookies on the part of the App, 
+please see below.
+<br>
+
+#### What are cookies used for?
+
+App uses EXCLUSIVELY technical cookies, does NOT install cookies of third parties,
+and does NOT perform any type of user profiling.
+<br>
+
+#### Disabling cookies
+
+The memorisation of cookies in one’s own computer can be disabled by following the
+instructions reported in the following link for major browsers:
+
+  - [Mozilla Firefox](https://support.mozilla.org/en-US/kb/block-websites-storing-cookies-site-data-firefox)
+  - [Google’s Chrome](https://support.google.com/chrome/answer/95647?co=GENIE.Platform%3DDesktop&hl=en)
+  - [Microsoft’s Edge](https://support.microsoft.com/en-us/microsoft-edge/microsoft-edge-browsing-data-and-privacy-bb8174ba-9d73-dcf2-9b4a-c582b4e640dd)
+  - [Otello Corporation’s Opera](https://help.opera.com/en/latest/web-preferences/#cookies)
+  - [Apple’s Safari](https://support.apple.com/en-gb/guide/safari/sfri11471/mac)
+  - [Microsoft’s Internet Explorer](https://support.microsoft.com/en-us/windows/manage-cookies-in-microsoft-edge-view-allow-block-delete-and-use-168dab11-0753-043d-7c16-ede5947fc64d)
+
+<br>
+  
+### WHAT DATA DO WE COLLECT?
+
+When using our App, a request may be made to provide the personal data necessary to
+create an account or log in to the Service (name, address, e-mail, account details,
+etc.). If requested, we will use these data to administer the processes and databases
+of our App. We shall guarantee that all the personal data furnished are safely preserved
+in conformity with the general regulation regarding the protection of data, Reg. (EU) 2016/679.
+<br>
+
+#### Rights of Users
+
+As a user, you can check the details that you have sent our App  by contacting us at
+the following e-mail address: [marinasa@pa.uc3m.es](mailto:marinasa@pa.uc3m.es) or [inaki.ucar@uc3m.es](mailto:inaki.ucar@uc3m.es) 
+
+Our safety procedures assume that we will be able to request proof of your identity
+before disclosing any information, including your e-mail address.
+
+Users may also contact us with the same method in order to modify, correct or request
+that your personal data be cancelled to the said account in any moment whatsoever.
+
+Keep in mind, however, that if you have shared data with other people through social
+media channels, this data may remain visible even if your account has been cancelled
+on our site.
+
+It is possible to request a legible copy of the personal data that we store at any 
+time, and this request will be processed within one month (provided that there are 
+no excessive charges and that the privacy of other individuals is not compromised).
+
+In order to do this, please contact us at the following e-mail address: [marinasa@pa.uc3m.es](mailto:marinasa@pa.uc3m.es)
+or [inaki.ucar@uc3m.es](mailto:inaki.ucar@uc3m.es)
+
+As a user, you can request that your data be directly transferred to another system,
+and this will be done free of charge.
+<br>
+
+#### How will the data be filed?
+
+If you decide to create an account or use another service to log in to the App, your
+data will be filed on our server.
+In cases where the data are stored on print media, these are conserved in a secure 
+location to which unauthorised persons are not admitted.
+
+Printed data is shredded when no longer needed.
+<br>
+
+#### Processing procedures
+
+DATA CONTROLLER uses all the safety procedures provided for by EU Regulation N° 
+2016/679 in order to protect collected data, avert risks of the loss or theft of 
+data, unauthorised access, and unlawful and incorrect use.
+<br>
+
+#### How will they be utilised?
+
+Your personal data will not be made available for any other purpose, excluding 
+legal obligations.
+<br>
+
+#### How long do we keep your data?
+
+DATA CONTROLLER will not keep your personal data any longer than necessary, anyway
+no more than three years.
+
+If requested by law or if it is reasonably necessary in order to satisfy regulatory
+requisites, resolve controversies, anticipate frauds and abuses, or apply our policies,
+we shall possibly keep several of your data for a limited time, even after having closed
+your account or it is no longer necessary to have contact.
+<br>
+
+#### Optional character of processing data
+
+Except for what is specified for navigation data, the conferment of data through 
+the present form on the App (Registration), i.e. the communications transmitted 
+on a voluntary basis by the same user to DATA CONTROLLER, always has an optional 
+nature. Nevertheless, in the case of a failure to confer data countermarked as 
+obligatory inside the request forms for registration in the list of suppliers, 
+DATA CONTROLLER will not be able to provide the user with the service required, 
+especially in the case of insertion in the list.
+<br>
+
+#### Right to update our policies on privacy
+
+We must point out that, to ensure a constant adaptation of the law and the central
+office's data controller indications, we continually review, process, and protect
+data. Therefore, modifications to our policies may be inspected in any moment 
+whatsoever.
+<br>
+
+#### Complaints
+
+Claims or questions related to the protection of data and privacy must be addressed
+to the person in charge of data protection (DOP), contact [inaki.ucar@uc3m.es](mailto:inaki.ucar@uc3m.es) 
+
+You will also have the right to make a complaint to the national control Authority:
+The Spanish Data Protection Authority: [Agencia Española de Protección de datos](https://www.aepd.es/en/areas/innovation-and-technology)
+
+<br>
+<br>
+<br>
+</main>
