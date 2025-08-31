@@ -31,7 +31,7 @@ the Skills4EOSC QA and Certification Framework. Moreover, a small set of questio
 was added to collect relevant information about the user for future analysis on 
 responses and feedback to improve the app.
 
-The first dataset (Quality Assurance questions) contains the following information:
+The first raw dataset (Quality Assurance questions) contains the following information:
 
   - *id_ind*:	unique identification number for each indicator, regardless their section
   of category. Letter of subframework followed by a number
@@ -310,13 +310,8 @@ write.csv2(general_feedback, ".//www/general_feedback_clean.csv")
 ```
 
 
-## References
 
-- 
--
--
--
--
+
 
 
 
