@@ -1,5 +1,5 @@
 # S4E-Quality-Compass-App
-This is the repository for the S4E Quality Compass, an app created for the [Skills4EOSC Project](https://www.uc3m.es) to provide quality assurance self-assessment on Open Science training materials for course designers and trainers, in compliance with the Skills4EOSC Quality Assurance Framework. 
+This is the repository for the [S4E Quality Compass](https://csslab.uc3m.es/shiny/S4E-Quality-Compass-App/), an app created for the [Skills4EOSC Project](https://www.uc3m.es) to provide quality assurance self-assessment on Open Science training materials for course designers and trainers, in compliance with the Skills4EOSC Quality Assurance Framework. 
 
 The main aim of this app is to provide a **self-assessment test** to evaluate the compliance of an Open Science course to the S4E Quality Framework. Besides collecting some user background information, this test addresses 4 key areas or sub-frameworks: 
 
@@ -31,6 +31,10 @@ In this repo you will find these main files (among others):
 
 Accessibility support (WCAG 2.1 AA level, WAI-ARIA best practices applied). However, more work is needed in this regard.
 
+
+## Licenses
+
+Except where otherwise noted, content on this site is licensed under a [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/). Sanchez-Moreno, M. (2025). S4E Quality Compass app (1.0.0).
 
 ## References
 
