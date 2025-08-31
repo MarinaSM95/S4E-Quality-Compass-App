@@ -4,32 +4,67 @@ author:
   - "Marina Sánchez Moreno"
   - "Kasper Drazewski"
 date: "2025-07-30"
-output: 
+lang: en
+output:
   html_document:
+    self_contained: true
     toc: true
     toc_depth: 3
     toc_float:
       collapsed: false
       smooth_scroll: true
+    number_sections: false
+    section_divs: true
+    theme: flatly   
+    df_print: paged
 ---
 
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
- 
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.align = "center"
+)
 ```
+
+<!-- ========================= Accessibility: skip link ========================= -->
+<a href="#main-content" class="skip-link sr-only">Skip to main content</a>
+<!-- Document’s content in a <main> landmark --> 
+<main id="main-content" tabindex="-1" role="main" aria-labelledby="doc-title">
+<span id="doc-title" class="sr-only">Terms of Service</span>
+<!-- Short summary to avoid heading-next-to-heading errors -->
+<p class="lede sr-only">This page explains ther Terms of Service, attribution and copyright among others.</p> 
+
+
+
 
 ```{css, echo=FALSE}
 .title, .author, .date  { display: none; }
 h2{
-text-align: center; font-weight: bold; color: #3C8DBC;
+text-align: center; font-weight: bold; color: #1d5380;
 }
 h3{
-background-color: #3C8DBC;
+background-color: #1d5380;
 color: white; 
 font-weight: bold; font-size: 18px;
-padding: 10px 15px; border-radius: 6px; margin-bottom: 0.5em;
+padding: 1em; border-radius: 6px; margin-bottom: 0.5em;
 }
+h4{
+font-weight: bold;
+}
+a{color: #0645AD; text-decoration: underline; }
+a:hover{color: #1d5380 ; text-decoration: none; }
+
+.sr-only {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0);
+  white-space: nowrap; border: 0;
+}
+
 ```
 
 

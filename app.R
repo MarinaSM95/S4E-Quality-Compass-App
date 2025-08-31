@@ -4,22 +4,24 @@
 ## LIBRARIES required
 
 library(shiny)
-library(bslib)
 library(shinydashboard)
 library(shinydashboardPlus)
-library(shinythemes)
 library(shinyjs)
 library(shinyWidgets)
 library(dplyr)
 library(readr)
 library(bootstrap)
 library(shinyBS)
-library(bsplus)
 library(DT)
-library(gargle)
 library(googledrive)
 library(googlesheets4)
 library(htmltools)
+library(ggalluvial)
+library(uuid)
+library(ggalluvial)
+library(ggplot2)
+library(stringr)
+library(tibble)
 
 
 # Only read project .Renviron if env vars are missing (nice for local dev)
@@ -77,8 +79,21 @@ general_feedback <- read_csv2("www/general_feedback_clean.csv") %>%
 
 # Decorative icons (accessible)
 icon_dec <- function(name, ...) {
-  icon(name, `aria-hidden` = "true", role = "presentation", ...)  # Font Awesome icon hidden from AT
+  # Accept: a string icon name, an <i> tag, or NULL/other (fallback to 'flag')
+  if (inherits(name, "shiny.tag")) {
+    x <- name
+  } else if (is.character(name) && length(name) == 1 && nzchar(name)) {
+    x <- icon(name, ...)
+  } else {
+    x <- icon("flag", ...)  # safe fallback
+  }
+  x$attribs$`aria-hidden` <- "true"
+  x$attribs$role          <- "presentation"
+  x$attribs$`aria-label`  <- NULL
+  x$attribs$title         <- NULL
+  x
 }
+
 
 
 # Helper (ARIA)
@@ -94,6 +109,7 @@ liveBoxOutput <- function(outputId, width = 4, label = NULL) {
 
 
 ui <- dashboardPage(
+  
   title="S4E Quality Compass",
  
  
@@ -159,9 +175,8 @@ ui <- dashboardPage(
  
   ## SIDEBAR (built dinamically in the server section)
   dashboardSidebar(
-    
     width = 250,
-    sidebarMenu( uiOutput("dynamic_sidebar"))
+    sidebarMenuOutput("dynamic_sidebar")
   ),
   
   ## BODY
@@ -186,108 +201,36 @@ ui <- dashboardPage(
   });
   
 ")),
+      
       tags$script(HTML("
   (function () {
-    function wireBootstrapTabs() {
-      // Only treat real Bootstrap tab/pill navs as tabs
-      document.querySelectorAll('.nav-tabs, .nav-pills').forEach(function(ul){
-        ul.setAttribute('role','tablist');
-      });
-
-      document.querySelectorAll('.nav-tabs li > a[data-toggle=\"tab\"], .nav-pills li > a[data-toggle=\"tab\"]').forEach(function(a){
-        a.setAttribute('role','tab');
-        if (!a.id) a.id = 'tab-' + Math.random().toString(36).slice(2);
-        var target = a.getAttribute('href'); // e.g. '#pane-id'
-        if (target && target.charAt(0) === '#') {
-          a.setAttribute('aria-controls', target.slice(1));
-          var panel = document.querySelector(target);
-          if (panel) {
-            panel.setAttribute('role','tabpanel');
-            panel.setAttribute('aria-labelledby', a.id);
-          }
-        }
-      });
+    /* =========================
+       Helpers
+       ========================= */
+    function isVisible(el) {
+      if (!el || el.nodeType !== 1) return false;
+      if (el.closest('[hidden], [aria-hidden=\"true\"]')) return false;
+      var style = window.getComputedStyle(el);
+      if (style.display === 'none' || style.visibility === 'hidden') return false;
+      var rects = el.getClientRects();
+      return rects && rects.length > 0;
     }
 
-    function scrubNonTabs() {
-      // Sidebar menu items must NOT be tabs
-      document.querySelectorAll('.sidebar-menu li > a[data-toggle=\"tab\"]').forEach(function(a){
-        a.removeAttribute('role');
-        a.removeAttribute('aria-selected');
-        a.removeAttribute('aria-controls');
-      });
-
-      // Defensive: anywhere outside a real tablist, strip role=tab
-      document.querySelectorAll('a[role=\"tab\"]').forEach(function(a){
-        if (!a.closest('.nav-tabs, .nav-pills')) {
-          a.removeAttribute('role');
-          a.removeAttribute('aria-selected');
-          a.removeAttribute('aria-controls');
-        }
-      });
-
-      // Defensive: stray tabpanels not owned by a proper tab
-      document.querySelectorAll('[role=\"tabpanel\"]').forEach(function(p){
-        var labelledby = p.getAttribute('aria-labelledby');
-        var labelEl = labelledby && document.getElementById(labelledby);
-        if (!labelEl || !labelEl.closest('.nav-tabs, .nav-pills')) {
-          p.removeAttribute('role');
-          p.removeAttribute('aria-labelledby');
-        }
-      });
-
-      // Remove aria-selected from plain links (valid only on tabs)
-      document.querySelectorAll('a[aria-selected]:not([data-toggle=\"tab\"])').forEach(function(a){
-        a.removeAttribute('aria-selected');
-      });
+    function hasVisibleListItems(el) {
+      var items = el.querySelectorAll('li, [role=\"listitem\"]');
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i];
+        if (!isVisible(it)) continue;
+        var hasText = (it.textContent || '').trim().length > 0;
+        var hasInteractive = it.querySelector('a, button, input, select, textarea, [tabindex]') !== null;
+        if (hasText || hasInteractive) return true;
+      }
+      return false;
     }
 
-    function setAriaCurrentOnActive() {
-      // Clear any previous aria-current
-      document.querySelectorAll('a[aria-current]').forEach(function(a){
-        a.removeAttribute('aria-current');
-      });
-      // Mark only the active sidebar item as current page
-      document.querySelectorAll('.sidebar-menu li.active > a').forEach(function(a){
-        a.setAttribute('aria-current','page');
-      });
-    }
-
-    function applyAll() {
-      wireBootstrapTabs();
-      scrubNonTabs();
-      setAriaCurrentOnActive();
-    }
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', applyAll);
-    } else {
-      applyAll();
-    }
-    window.addEventListener('load', function(){
-      setTimeout(applyAll, 0);
-      setTimeout(applyAll, 500);
-    });
-
-    // Re-apply on Bootstrap tab events and Shiny input churn
-    $(document).on('shown.bs.tab', 'a[data-toggle=\"tab\"], .sidebar-menu a', applyAll);
-    $(document).on('shiny:inputchanged', function(){ setTimeout(applyAll, 0); });
-
-    // Watch for DOM/attribute changes that might re-introduce tab roles
-    new MutationObserver(function(){ applyAll(); })
-      .observe(document.body, {
-        subtree: true,
-        childList: true,
-        attributes: true,
-        attributeFilter: ['class','aria-selected','role']
-      });
-  })();
-")),
-      tags$script(HTML("
-  (function () {
-    /* -------------------------
+    /* =========================
        Tabs & ARIA cleanup
-       ------------------------- */
+       ========================= */
     function wireBootstrapTabs() {
       document.querySelectorAll('.nav-tabs, .nav-pills').forEach(function(ul){
         ul.setAttribute('role','tablist');
@@ -346,52 +289,95 @@ ui <- dashboardPage(
       });
     }
 
-    /* -------------------------
-       Remove EMPTY role=list
-       (robust: ignores hidden items)
-       ------------------------- */
-    function isVisible(el){
-      if (!el) return false;
-      if (el.closest('[aria-hidden=\"true\"]')) return false;
-      var cs = window.getComputedStyle(el);
-      if (cs.display === 'none' || cs.visibility === 'hidden') return false;
-      // zero-size often means visually gone
-      var rect = el.getBoundingClientRect();
-      if (rect.width === 0 && rect.height === 0) return false;
-      return true;
-    }
-
-    function scrubEmptyLists() {
+    /* =========================
+       Lists: fix role=list issues
+       ========================= */
+    function scrubLists() {
       document.querySelectorAll('[role=\"list\"]').forEach(function(el){
-        // Find *visible* listitems
-        var items = Array.prototype.slice.call(
-          el.querySelectorAll('li, [role=\"listitem\"]')
-        ).filter(isVisible);
-
-        // Also treat whitespace-only content as empty
-        var textOnly = (el.textContent || '').trim().length === 0;
-
-        if (items.length === 0 && textOnly) {
+        var tag = el.tagName;
+        // 1) Native lists: drop role
+        if (tag === 'UL' || tag === 'OL' || tag === 'MENU') {
           el.removeAttribute('role');
-          // If it is a <ul>/<ol> with no visible items, change it to a neutral <div>
-          if ((el.tagName === 'UL' || el.tagName === 'OL') && el.children.length === 0) {
-            var div = document.createElement('div');
-            while (el.firstChild) div.appendChild(el.firstChild);
-            el.parentNode.replaceChild(div, el);
+          return;
+        }
+
+        // 2) Empty/pointless lists: drop role
+        if (!hasVisibleListItems(el)) {
+          el.removeAttribute('role');
+          return;
+        }
+
+        // 3) For non-native list containers, ensure children act as items
+        Array.prototype.forEach.call(el.children, function(child){
+          if (!isVisible(child)) return;
+          if (child.matches('li, [role=\"listitem\"]')) return;
+          var hasText = (child.textContent || '').trim().length > 0;
+          var hasInteractive = child.querySelector('a, button, input, select, textarea, [tabindex]') !== null;
+          if (hasText || hasInteractive) {
+            child.setAttribute('role','listitem');
           }
+        });
+      });
+
+      // 4) Strip listitem role from empty/hidden nodes
+      document.querySelectorAll('[role=\"listitem\"]').forEach(function(it){
+        if (!isVisible(it)) { it.removeAttribute('role'); return; }
+        var text = (it.textContent || '').trim();
+        var hasInteractive = it.querySelector('a, button, input, select, textarea, [tabindex]') !== null;
+        if (!text && !hasInteractive) {
+          it.removeAttribute('role');
         }
       });
     }
+    
+    
+        function scrubEmptyNavbars() {
+      // Only touch header navbars; do NOT touch the sidebar menu
+      document.querySelectorAll('.navbar-custom-menu > ul.nav.navbar-nav').forEach(function(ul){
+        var hasItems = ul.querySelector('li') !== null;
 
-    /* -------------------------
-       Apply all
-       ------------------------- */
-    function applyAll() {
+        if (!hasItems) {
+          // Neutralize semantics and hide while empty
+          ul.setAttribute('role', 'none');        // removes list semantics
+          ul.setAttribute('aria-hidden', 'true'); // hide from AT
+          ul.style.display = 'none';              // optional: hide visually
+        } else {
+          // Restore when items appear later
+          ul.removeAttribute('role');
+          ul.removeAttribute('aria-hidden');
+          ul.style.display = '';
+        }
+      });
+        }
+
+    
+
+    /* ==========================================
+       Auto-size same-origin iframes (ToS/Privacy)
+       ========================================== */
+    function resizeAutosizeIframes() {
+      document.querySelectorAll('iframe[data-autosize=\"true\"]').forEach(function(iframe){
+        try {
+          var doc = iframe.contentDocument || iframe.contentWindow.document;
+          if (!doc) return;
+          var h = Math.max(
+            doc.body.scrollHeight, doc.documentElement.scrollHeight,
+            doc.body.offsetHeight, doc.documentElement.offsetHeight
+          );
+          iframe.style.height = (h + 20) + 'px';
+        } catch (e) { /* cross-origin guard */ }
+      });
+    }
+
+        function applyAll() {
       wireBootstrapTabs();
       scrubNonTabs();
       setAriaCurrentOnActive();
-      scrubEmptyLists();
+      scrubLists();               // fixes generic role=list issues
+      scrubEmptyNavbars();        // <-- add this line
+      resizeAutosizeIframes();
     }
+
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', applyAll);
@@ -402,20 +388,73 @@ ui <- dashboardPage(
       setTimeout(applyAll, 0);
       setTimeout(applyAll, 500);
     });
-
     $(document).on('shown.bs.tab', 'a[data-toggle=\"tab\"], .sidebar-menu a', applyAll);
     $(document).on('shiny:inputchanged', function(){ setTimeout(applyAll, 0); });
 
     new MutationObserver(function(){ applyAll(); })
       .observe(document.body, {
-        subtree: true, childList: true, attributes: true,
-        attributeFilter: ['class','aria-selected','role','style']
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ['class','aria-selected','role','hidden','style']
       });
-  })();
-")),
-      
 
-    ),
+    window.addEventListener('resize', function(){ setTimeout(resizeAutosizeIframes, 50); });
+    setInterval(resizeAutosizeIframes, 1200);
+  })();
+  
+  /* Scoped ARIA for help-note popovers (only .qa-help-trigger) */
+(function(){
+  function getTip($trigger){
+    var pop = $trigger.data('bs.popover') || $trigger.data('Popover');
+    if (!pop) return null;
+    return (typeof pop.tip === 'function') ? $(pop.tip()) :
+           (pop.tip ? $(pop.tip) : (pop.$tip ? pop.$tip : null));
+  }
+
+  function enhance(e){
+    var $trg = $(e.target);
+    if (!$trg.is('.qa-help-trigger')) return;       // <-- scope
+
+    var $tip = getTip($trg);
+    if (!$tip || !$tip.length) return;
+
+    // give the popover a stable id
+    var pid = $tip.attr('id') || ('pop-' + ($trg.attr('id') || Math.random().toString(36).slice(2)));
+    $tip.attr('id', pid);
+
+    // Use a lightweight landmark so we don't fight other roles
+    $tip.attr({'role':'region', 'aria-label':'Help note'});
+
+    // If there is a visible header, prefer it as the label
+    var $hdr = $tip.find('.popover-title, .popover-header').first();
+    if ($hdr.length){
+      if (!$hdr.attr('id')) $hdr.attr('id', pid + '-label');
+      $hdr.attr({'role':'heading','aria-level':'3'});
+      $tip.attr({'aria-labelledby': $hdr.attr('id')}).removeAttr('aria-label');
+    }
+
+    // Mark the body as document-ish content (optional)
+    $tip.find('.popover-content, .popover-body').attr({'role':'document'});
+
+    // Connect trigger ↔ popover while open
+    $trg.attr({'aria-controls': pid, 'aria-expanded': 'true'});
+  }
+
+  function teardown(e){
+    var $trg = $(e.target);
+    if (!$trg.is('.qa-help-trigger')) return;       // <-- scope
+    $trg.removeAttr('aria-expanded aria-controls');
+  }
+
+  // Bootstrap events, scoped to our triggers only
+  $(document)
+    .on('inserted.bs.popover shown.bs.popover', '.qa-help-trigger', enhance)
+    .on('hide.bs.popover hidden.bs.popover',     '.qa-help-trigger', teardown);
+})();
+
+"))
+   ),
     tags$style(HTML("
     
   /* Make header taller */
@@ -423,7 +462,8 @@ ui <- dashboardPage(
     height: 70px !important;
     background-color: #3C8DBC !important;
   }
-
+a{color: #0645AD; text-decoration: underline; }
+a:hover{color: #1d5380 ; text-decoration: none; }
 
 body, .wrapper, .content-wrapper, .right-side {
   background-color: white !important;
@@ -559,75 +599,125 @@ body, .wrapper, .content-wrapper, .right-side {
      
     color: white;
   }
-  
-  
-#clickforassessment, #clickforsurvey {
-  position: center;
+/* Big CTA buttons: accessible, zoom-safe, motion-aware */
+#clickforassessment,
+#clickforsurvey {
+  position: relative;                /* was: invalid 'position: center' */
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  padding: 14px 28px;
+  gap: 0.75rem;
+
+  /* Zoom / text scaling friendliness */
+  padding: 0.9em 1.6em;              /* scales with font size */
+  line-height: 1.3;                  /* avoid clipping */
+  white-space: normal;               /* allow wrapping */
+  flex-wrap: wrap;                   /* allow wrapping */
+  height: auto;                      /* grow with content */
+  max-width: min(90vw, 36rem);       /* keep a sensible max width */
+  text-align: center;
+
+  /* Visuals */
   background: linear-gradient(145deg, #1d598a, #1d598a);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 100px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;              /* pill shape, still wraps fine */
   color: #fff;
-  font-size: 16px;
+  font-size: 1rem;                   /* was 16px; use relative units */
   font-weight: 600;
   letter-spacing: 0.5px;
   cursor: pointer;
-  overflow: hidden;
-  transition: all 0.4s ease-in-out;
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+
+  /* No clipping! */
+  overflow: visible;                 /* was: hidden */
+
+  /* Subtle motion; reduce if user prefers less */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 0 20px rgba(0,0,0, 0.12);
   backdrop-filter: blur(8px);
   z-index: 1;
 }
 
-#clickforassessment::before, #clickforsurvey::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: conic-gradient(from 0deg, #E6007E, #1d598a, #95C11F, #E6007E);
-  animation: rotate 4s linear infinite;
-  z-index: -2;
-}
 
-#clickforassessment::after, #clickforsurvey::after {
+
+/* Inner fill so the text sits on solid color with good contrast */
+#clickforassessment::after,
+#clickforsurvey::after {
   content: '';
   position: absolute;
   inset: 2px;
   background: #1d598a;
   border-radius: inherit;
   z-index: -1;
+  pointer-events: none;
 }
 
-#clickforassessment:hover, #clickforsurvey:hover {
-  transform: scale(1.05);
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.3));
+/* Hover/focus interactions */
+#clickforassessment:hover,
+#clickforsurvey:hover {
+  transform: scale(1.02);            /* gentler than 1.05 to avoid jitter */
+  box-shadow: 0 0 28px rgba(0,0,0, 0.18);
 }
 
-#clickforassessment:hover .arrow, #clickforsurvey:hover .arrow {
-  transform: translateX(6px);
+/* Strong keyboard focus (pairs well with your global :focus-visible rules) */
+#clickforassessment:focus-visible,
+#clickforsurvey:focus-visible {
+  outline: 3px solid #000;           /* high contrast */
+  outline-offset: 3px;
 }
 
+/* Disabled look (in case you use it later) */
+#clickforassessment:disabled,
+#clickforsurvey:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Icon inside the button */
 .arrow {
   width: 22px;
   height: 22px;
-  transition: transform 0.3s ease-in-out;
-  color: white;
+  transition: transform 0.2s ease;   /* keep it snappy but short */
+  color: #fff;
+}
+#clickforassessment:hover .arrow,
+#clickforsurvey:hover .arrow {
+  transform: translateX(6px);
 }
 
-@keyframes rotate {
-  0% {
-    transform: rotate(0deg);
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  #clickforassessment,
+  #clickforsurvey {
+    transition: none;
+    transform: none;
   }
-  100% {
-    transform: rotate(360deg);
+  #clickforassessment::before,
+  #clickforsurvey::before,
+  .arrow {
+    animation: none !important;
+    transition: none !important;
   }
 }
+
+/* Bigger, still accessible */
+#clickforassessment,
+#clickforsurvey {
+  font-size: clamp(1.125rem, 1.2vw + 0.75rem, 1.5rem); /* ~18–24px responsive */
+  line-height: 1.35;                   /* avoids text clipping */
+  padding: 1em 1.8em;                  /* scales with font size */
+  min-inline-size: 14ch;               /* at least ~14 characters wide */
+  min-height: 3.4rem;                  /* ≥ 54px touch target */
+}
+
+/* Bigger icon that scales with text */
+#clickforassessment .arrow,
+#clickforsurvey .arrow {
+  width: 1.35em;
+  height: 1.35em;
+}
+
+  
+
 
 #sections_select {
   display: flex;
@@ -692,7 +782,7 @@ body, .wrapper, .content-wrapper, .right-side {
   background-color: #5D7E02 !important; /* green */
 }
 #select_section3.active {
-  background-color: #1d598a !important; /* blue */
+  background-color: #1d598a !important; /* navy */
 }
 #select_section4.active {
   background-color: #BD0068 !important; /* pink */
@@ -709,13 +799,45 @@ body, .wrapper, .content-wrapper, .right-side {
   
 }
 .progress {
-  height: 25px;
+  height: 30px;
    border-radius: 10px !important; 
 }
 .progress-bar {
   font-weight: bold;
   background-color: #337ab7;
   border-radius: 10px !important; 
+}
+
+/* Progress bar: readable at 200% zoom, no clipping */
+.progress {
+  position: relative;
+  min-height: 32px;               /* give text room to breathe */
+  overflow: visible !important;   /* allow overlay text to show even if bar is tiny */
+  border-radius: 10px !important;
+}
+
+.progress-bar {
+  display: block;
+  height: 100%;
+  padding: 0;                      /* text will live in ::after, not inside the bar */
+  line-height: 1.2;
+  white-space: normal !important;  /* allow wrapping if needed */
+  overflow: visible !important;
+}
+
+/* Centered overlay label driven by a data attribute */
+#progress_bar::after {
+  content: attr(data-label);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  font-weight: 700;
+  font-size: clamp(12px, 2.2vw, 18px);  /* scales nicely up to 200% */
+  color: #000;                           /* good contrast on light track */
+  pointer-events: none;                  /* don’t block clicks */
+  padding: 0 6px;                        /* avoid feeling cramped */
 }
 
 
@@ -746,16 +868,17 @@ body, .wrapper, .content-wrapper, .right-side {
   color: #333;
 }
 
-.modal-header {
-  background-color: #1d598a !important;
-  color: white !important;
-  font-weight: bold;
+.modal-content {
   border-bottom: none;
+  border-radius: 10px;
 }
 
-.modal-title {
-  color: white !important;
+
+.modal-h2 {
+ font-weight: bold;
+  color: #1d598a !important;
 } 
+
 
 #self-assessment.box, #general-feedback,
 #general-feedck-container{
@@ -792,7 +915,7 @@ min-height:44px;
 }
 
 #submit, #submit_general_feedback{
-  background-color: #95C11F;
+  background-color: #567308;
   color: white;
   border: none;
   border-radius: 30px;
@@ -897,6 +1020,149 @@ textarea:focus,
   text-decoration: none;
 }
 
+/* Accessible color for slider bars (self-assessment + general feedback) */
+.irs-bar,
+.irs-bar-edge,
+.irs-single,
+.irs-to,
+.irs-from {
+  background-color: #1d598a !important;   /* main bar + handle */
+  border-color: #1d598a !important;
+  color: #fff !important;                 /* text labels on handles */
+}
+
+.irs-handle > i:first-child {
+  background-color: #1d598a !important;   /* round handle dot */
+  
+}
+
+/* Optional: make the inactive track lighter for contrast */
+.irs-line,
+.irs-line-left,
+.irs-line-mid,
+.irs-line-right {
+  background-color: #e0e0e0 !important;   /* light gray background */
+}
+
+/* Only these report boxes get dark blue headers with white text */
+#results-main #maturitylvl > .box-header,
+#results-main #score1    > .box-header,
+#results-main #score2    > .box-header,
+#results-main #score3    > .box-header,
+#results-main #Best_practices > .box-header,
+#results-main #results_table  > .box-header {
+  background-color: #1d598a !important;
+  color: #ffffff !important;
+  border-bottom: none !important;
+}
+
+#results-main #maturitylvl > .box-header .box-title,
+#results-main #score1    > .box-header .box-title,
+#results-main #score2    > .box-header .box-title,
+#results-main #score3    > .box-header .box-title,
+#results-main #Best_practices > .box-header .box-title,
+#results-main #results_table  > .box-header .box-title {
+  color: #ffffff !important;
+}
+
+/* Tab pills in the Results 'Your score' tabBox */
+#score_detail .nav-tabs > li > a {
+  background-color: #ffffff;          /* default white */
+  color: #1d598a;                     /* dark blue text */
+  border: 1px solid #1d598a;          /* dark blue border */
+  font-weight: bold;
+  border-radius: 20px;                /* pill shape */
+  margin-right: 6px;
+  padding: 6px 14px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+#score_detail .nav-tabs > li.active > a,
+#score_detail .nav-tabs > li.active > a:focus,
+#score_detail .nav-tabs > li.active > a:hover {
+  background-color: #1d598a !important;  /* dark blue active */
+  color: #ffffff !important;             /* white text */
+  border: 1px solid #1d598a !important;
+}
+
+#score_detail .nav-tabs > li > a:hover {
+  background-color: #eaf2f8;           /* subtle blue hover */
+  color: #1d598a;
+}
+
+/* Results section: force all inner box headers to dark blue */
+#results-main .box > .box-header {
+  background-color: #1d598a !important;
+  color: #ffffff !important;
+  border-bottom: none !important;
+  border-radius: 2px 2px 0 0;  /* smooth rounded top */
+  padding: 8px 12px;
+}
+
+/* Ensure header title text/icons are white */
+#results-main .box > .box-header .box-title,
+#results-main .box > .box-header .fa,
+#results-main .box > .box-header .glyphicon,
+#results-main .box > .box-header .ion {
+  color: #ffffff !important;
+}
+
+/* But EXCLUDE the 'Your score' tabBox header from this styling */
+#results-main #score_detail > .nav-tabs-custom > .box-header {
+  background-color: #ffffff !important; /* keep white */
+  color: #1d598a !important;           /* dark blue text */
+  border-bottom: 2px solid #1d598a !important;
+}
+#results-main #score_detail > .nav-tabs-custom > .box-header .box-title {
+  color: #1d598a !important;
+}
+
+/* === Brand palette for shinydashboard ValueBoxes === */
+.small-box[class*='bg-'] {
+  color: #ffffff !important;                 /* force white text */
+}
+.small-box .icon > i,
+.small-box .icon > i.fa,
+.small-box .icon > i.glyphicon,
+.small-box .icon > i.ion {
+  color: #ffffff !important;                 /* white icons */
+  opacity: 0.95;
+}
+
+/* Brand blue family */
+.bg-blue, .bg-aqua, .bg-light-blue {
+  background-color: #1d598a !important;
+}
+.bg-navy {
+  background-color: #154a7a !important;
+}
+
+/* Warm (orange) */
+.bg-yellow {
+  background-color: #b35b04 !important;
+}
+
+/* Greens */
+.bg-green, .bg-olive {
+  background-color: #5D7E02 !important;
+}
+
+/* Magentas/Reds */
+.bg-red, .bg-fuchsia, .bg-maroon {
+  background-color: #BD0068 !important;
+}
+
+/* Supporting violet if you ever use it */
+.bg-purple {
+  background-color: #6a1b9a !important;
+}
+
+/* Make sure inner text stays white and readable */
+.small-box .inner h3,
+.small-box .inner p,
+.small-box .inner .small-box-footer {
+  color: #ffffff !important;
+}
 
 
 
@@ -1011,11 +1277,12 @@ tags$main(
               conditionalPanel("input.clickforassessment == 0", 
                                tags$h1(id = "assess-h1-intro","Self-assessment test intro", class = "sr-only"),# Title only for SR  
                                div(role = "region", `aria-labelledby` = "assess-h1-intro", id = "assessment-intro",
+                                   tags$h2("Self-assessment test intro section", class="sr-only"),
                                                 
                                   fluidRow (
                                     box(
                                       id = "introassessment",
-                                      title = tags$h2("Self-assessment test"),
+                                      title = "Self-assessment test",
                                       tags$p("The Skills4EOSC Quality self-assessment
                                       test covers all indicators from the Skills4EOSC Quality
                                       Assurance Framework. During the test, you will navigate through 5 sections: Background
@@ -1081,8 +1348,10 @@ tags$main(
           style = "text-align: center; font-weight: bold; color: #3C8DBC;",
           "Your Course Quality Report"
         ),
+        tags$p(class = "sr-only", "This panel shows your overall maturity level as a value box."),
+        
         div(role = "region", `aria-labelledby` = "results-h1", id = "results-main",
-    
+        tags$h2("Self-assessment results page", class="sr-only"),
           
           tags$br(),
           
@@ -1093,9 +1362,12 @@ tags$main(
             fluidRow(
               box(
                 id = "maturitylvl",
-                title = tags$h2("Your course maturity level"),
+                title = "Your course maturity level",
                 width = 12, status = "primary", solidHeader = TRUE,
-                div(style = "text-align:center;", liveBoxOutput("maturity_level", width = 12))
+                div(style = "text-align:center;", 
+                    tags$p(class = "sr-only", "Your course maturity level"),
+                    liveBoxOutput("maturity_level",
+                                  label="Quality maturity level of your course", width = 12))
               )
             ),
             
@@ -1103,7 +1375,7 @@ tags$main(
             fluidRow(
               tabBox(
                 header = tags$span("Your score",
-                                   style = "color: #3C8DBC; font-size: 20px; font-weight: bold;"
+                                   style = "background-color: #ffffff; color: #1d598a; font-size: 20px; font-weight: bold;"
                 ),
                 id = "score_detail",
                 side = "right",
@@ -1111,23 +1383,34 @@ tags$main(
                 type = "pills",
                 
                 tabPanel(
-                  id = "scoretotal", "Total score",
+                  id = "scoretotal", "Total score", 
+                  tags$p(class = "sr-only", "This tab shows your total, minimal, and detailed scores."),
+                  
+                  fluidRow(
+                    tags$br(),
                   box(
+                    title= "Your overall score",
                     width = 12,
+                    solidHeader = FALSE,
+                    tags$p(class = "sr-only", "The following value boxes display total counts of Yes answers."),
                     liveBoxOutput("score_total", label = "Total score. Displays number of Yes answers out of total questions."),
                     liveBoxOutput("score_minimal", label = "Minimal Level score. Displays number of Yes answers out of total minimal questions."),
                     liveBoxOutput("score_detailed", label = "Detailed Level score. Displays number of Yes answers out of total detailed questions.")
                   )
-                ),
+                )),
                 
                 tabPanel(
                   id = "score1", "Score by section",
+                  tags$p(class = "sr-only", "This tab shows minimal and detailed scores for each section."),
+                  
                   fluidRow(
                     tags$br(),
                     box(
                       title = "Content & Structure", solidHeader = TRUE, background = NULL,
                       width = 6, status = "primary",
-                      style = "border-color: #F49200; border-radius: 12px; margin-top:5px;",
+                      style = "border-color: #95C11F; border-radius: 12px;",
+                      tags$p(class = "sr-only", "Content & Structure: minimal and detailed value boxes."),
+                      
                       liveBoxOutput("score_content_minimal",  width = 6,
                                     label = "Minimal Level score in section 1. Displays number of Yes answers out of total minimal questions in Content & Structure."),
                       liveBoxOutput("score_content_detailed", width = 6,
@@ -1137,6 +1420,7 @@ tags$main(
                       title = "Implementation", solidHeader = TRUE, background = NULL,
                       width = 6, status = "primary",
                       style = "border-color: #95C11F; border-radius: 12px;",
+                      tags$p(class = "sr-only", "Implementation: minimal and detailed value boxes."),
                       liveBoxOutput("score_implementation_minimal",  width = 6,
                                     label = "Minimal Level score in section 2. Displays number of Yes answers out of total minimal questions in Implementation."),
                       liveBoxOutput("score_implementation_detailed", width = 6,
@@ -1148,6 +1432,7 @@ tags$main(
                       title = "Evaluation", solidHeader = TRUE, background = NULL,
                       width = 6, status = "primary",
                       style = "border-color: #1d598a; border-radius: 12px;",
+                      tags$p(class = "sr-only", "Evaluation: minimal and detailed value boxes."),
                       liveBoxOutput("score_evaluation_minimal",  width = 6,
                                     label = "Minimal Level score in section 3. Displays number of Yes answers out of total minimal questions in Evaluation."),
                       liveBoxOutput("score_evaluation_detailed", width = 6,
@@ -1157,6 +1442,8 @@ tags$main(
                       title = "Licensing & Ethics", solidHeader = TRUE, background = NULL,
                       width = 6, status = "primary",
                       style = "border-color: #E6007E; border-radius: 12px;",
+                      tags$p(class = "sr-only", "Licensing and Ethics: minimal and detailed value boxes."),
+                      
                       liveBoxOutput("score_ethics_minimal",  width = 6,
                                     label = "Minimal Level score in section 4. Displays number of Yes answers out of total minimal questions in Licensing & Ethics."),
                       liveBoxOutput("score_ethics_detailed", width = 6,
@@ -1173,6 +1460,7 @@ tags$main(
                       title = "ESSENTIAL", solidHeader = TRUE, background = NULL,
                       width = 6, status = "primary",
                       style = "border-color: #F49200; border-radius: 12px;",
+                      tags$p(class = "sr-only", "Essential sub-framework: minimal and detailed value boxes."),
                       liveBoxOutput("score_essential_minimal",  width = 6,
                                     label = "Minimal Level score in the Essential Subframework. Displays number of Yes answers out of total minimal questions in Essential."),
                       liveBoxOutput("score_essential_detailed", width = 6,
@@ -1182,6 +1470,8 @@ tags$main(
                       title = "FAIR", solidHeader = TRUE, background = NULL,
                       width = 6, status = "primary",
                       style = "border-color: #95C11F; border-radius: 12px;",
+                      tags$p(class = "sr-only", "FAIR sub-framework: minimal and detailed value boxes."),
+                      
                       liveBoxOutput("score_fair_minimal",  width = 6,
                                     label= "Minimal Level score in the FAIR Subframework. Displays number of Yes answers out of total minimal questions in FAIR"),
                       liveBoxOutput("score_fair_detailed", width = 6,
@@ -1193,6 +1483,7 @@ tags$main(
                       title = "MVS", solidHeader = TRUE, background = NULL,
                       width = 6, status = "primary",
                       style = "border-color: #1d598a; border-radius: 12px;",
+                      tags$p(class = "sr-only", "MVS sub-framework: minimal and detailed value boxes."),
                       liveBoxOutput("score_mvs_minimal",  width = 6,
                                     label= "Minimal Level score in the MVS Subframework. Displays number of Yes answers out of total minimal questions in MVS."),
                       liveBoxOutput("score_mvs_detailed", width = 6,
@@ -1202,6 +1493,7 @@ tags$main(
                       title = "ELSI", solidHeader = TRUE, background = NULL,
                       width = 6, status = "primary",
                       style = "border-color: #E6007E; border-radius: 12px;",
+                      tags$p(class = "sr-only", "ELSI sub-framework: minimal and detailed value boxes."),
                       liveBoxOutput("score_elsi_minimal",  width = 6,
                                     label= "Minimal Level score in the ELSI Subframework. Displays number of Yes answers out of total minimal questions in ELSI."),
                       liveBoxOutput("score_elsi_detailed", width = 6,
@@ -1243,12 +1535,12 @@ tags$main(
       )
       ,
       tabItem(tabName = "generalfeedback",
-              tags$h1(id="gf-h1", class="sr-only", "Introduction to General Feedback Survey"),
-              
-              div(role="region", `aria-labelledby`="gf-h1", id="gf-main",
-              
               # Panel shown by default, hidden survey until button "clickforsurvey" is clicked
               conditionalPanel("input.clickforsurvey == 0", 
+                               tags$h1(id="gf-h1", class="sr-only", "Introduction to General Feedback Survey"),
+                               
+                               div(role="region", `aria-labelledby`="gf-h1", id="gf-main",
+                                   tags$h2("General feedback survey intro section", class="sr-only"),
                                
                                fluidRow (
                                  box(
@@ -1291,13 +1583,13 @@ tags$main(
                                    )),
                                div(style = "width: 100%; text-align: center;",
                                    actionButton("clickforsurvey",
-                                                label ="Start General Feedback Survey"
-                                   ))
-                                 ),
+                                                label ="Start General Feedback Survey"))
+                                 )),
               conditionalPanel("input.clickforsurvey == 1",
                                tags$h1(id="gf-h1-active",
                                        style="text-align:center; font-weight:bold; color:#3C8DBC;",
                                        "General Feedback survey"),
+                               div(role = "region", `aria-labelledby` = "gf-h1-active", id = "gf-survey",
                                uiOutput("progress_bar2_ui"),
                                fluidRow(id= "general-feedback-container",
                                  box(
@@ -1307,13 +1599,14 @@ tags$main(
                                    box-shadow: none; border: none; padding: 0;",
                                    uiOutput("feedback_ui"))
                                  )
-                               )
-              )
+                               ))
+              
       ),
       
       tabItem(tabName = "terms",
               tags$h1(id="terms-h1", class="sr-only", "Terms of Service"),
               div(role="region", `aria-labelledby`="terms-h1", id="terms-main",
+                  tags$h2(class="sr-only", "ToS section"),
               fluidRow(
                 box(title = tags$h2("Terms of Service"), status = "primary",
                     style="overflow:auto;",
@@ -1324,8 +1617,9 @@ tags$main(
       tabItem(tabName = "privacy",
               tags$h1(id="privacy-h1", class="sr-only", "Privacy Policy"),
               div(role="region", `aria-labelledby`="privacy-h1", id="privacy-main",
+                  tags$h2(class="sr-only", "Privacy Policy section"),
               fluidRow(
-                box(title = tags$h2("Privacy Policy"), status = "primary",
+                box(title = "Privacy Policy", status = "primary",
                     solidHeader = TRUE, width = 12, htmlOutput("privacy_content"))
               ))
       )
@@ -1339,7 +1633,7 @@ tags$main(
 
   footer= dashboardFooter(
     
-    left= tags$div(style= "font-size: 10px; padding:5px; padding-top:10px;position:relative;", 
+    left= tags$div(style= "font-size: 12px; padding:5px; padding-top:10px;position:relative;", 
                    p("Except where otherwise noted, content on this site is licensed 
                             under a", style= "display:inline;"),
                    a(href= "https://creativecommons.org/licenses/by/4.0/", "Creative Commons Attribution 4.0 
@@ -1476,31 +1770,31 @@ server <- function(input, output, session) {
         title = "Level 4 – Optimized",
         desc  = "Full detailed & minimal compliance; feedback loops; continuous improvement.",
         color = "purple",
-        icon  = "ranking-star"
+        icon  = icon_dec("ranking-star")
       )
     } else if (minimal$total > 0 && minimal$yes == minimal$total) {
       list(
         level = 3,
         title = "Level 3 – Managed",
         desc  = "Full minimal compliance + learning resource reviews.",
-        color = "blue",
-        icon  = "hand-fist"
+        color = "maroon",
+        icon  = icon_dec("hand-fist")
       )
     } else if (pct_total >= cutoff_defined) {
       list(
         level = 2,
         title = "Level 2 – Defined",
         desc  = "Partial use of QAF; some minimal indicators implemented.",
-        color = "green",
-        icon  = "rocket"
+        color = "olive",
+        icon  = icon_dec("thumbs-up")
       )
     } else {
       list(
         level = 1,
         title = "Level 1 – Initial",
         desc  = "No QA in place; ad hoc training materials.",
-        color = "yellow",
-        icon  = "face-grin-stars"
+        color = "red",
+        icon  = icon_dec("face-grin-stars")
       )
     }
   })
@@ -1526,7 +1820,7 @@ server <- function(input, output, session) {
   
   output$privacy_content <- renderUI({
     tags$iframe(
-      src   = "./Privacy-Policy.html",
+      src   = "./Privacy-Policy_accessible.html",
       title = "Privacy Policy",
       width = "100%",
       style = "border:none; width:100%; height:1px; min-height:60vh;",
@@ -1549,21 +1843,19 @@ server <- function(input, output, session) {
   
   # Dinamic sidebar (hidden results tab until self-assessment is complete)
   output$dynamic_sidebar <- renderMenu({
-    tagList(
-      sidebarMenu(id = "sidebarMenuid", selected = "about",
-                  menuItem("About", tabName = "about", icon = icon_dec("home")),
-                  menuItem("Quality Self-assessment", tabName = "assessment", icon = icon_dec("list-check")),
-                  if (submission_complete()) menuItem("Results", tabName = "results", icon = icon_dec("chart-bar")),
-                  menuItem("General Feedback", tabName = "generalfeedback", icon = icon_dec("comments"))
-      ),
-      # Spacer and legal docs section
+    sidebarMenu(
+      id = "sidebarMenuid",
+      selected = "about",
+      menuItem("About", tabName = "about", icon = icon_dec("home")),
+      menuItem("Quality Self-assessment", tabName = "assessment", icon = icon_dec("list-check")),
+      if (submission_complete()) menuItem("Results", tabName = "results", icon = icon_dec("chart-bar")),
+      menuItem("General Feedback", tabName = "generalfeedback", icon = icon_dec("comments")),
       tags$hr(style = "border-top: 1px solid #999; margin: 20px 0;"),
-      sidebarMenu(
-        menuItem("Terms of Service", tabName = "terms", icon = icon_dec("file-contract")),
-        menuItem("Privacy Policy", tabName = "privacy", icon = icon_dec("user-shield"))
-      )
+      menuItem("Terms of Service", tabName = "terms", icon = icon_dec("file-contract")),
+      menuItem("Privacy Policy", tabName = "privacy", icon = icon_dec("user-shield"))
     )
   })
+  
   
   
   check_required_inputs <- function(page_data, input) {
@@ -1637,6 +1929,7 @@ server <- function(input, output, session) {
         qid   <- row$input_id
         inputId <- paste0("q_", qid)
         
+        
         # Dependency visibility
         show_question <- TRUE
         if (!is.na(row$dependence) && nzchar(row$dependence)) {
@@ -1658,6 +1951,9 @@ server <- function(input, output, session) {
         label_id <- paste0(inputId, "-label")
         help_id  <- paste0("help_note_", qid)
         
+        # visible label id
+        vis_label_id <- paste0(inputId, "-vlabel")
+        
         # Help button (popover trigger)
         help_btn <- if (!is.na(row$notes) && nzchar(row$notes)) {
           shinyBS::bsButton(
@@ -1665,8 +1961,9 @@ server <- function(input, output, session) {
             label   = NULL,
             icon    = icon_dec("circle-info"),
             style   = "info",
-            size    = "extra-small"
+            size    = "small"
           ) |> htmltools::tagAppendAttributes(
+            class = "qa-help-trigger", 
             `aria-label`   = "Show help note for this question",
             `aria-describedby` = help_id
           )
@@ -1733,7 +2030,8 @@ server <- function(input, output, session) {
             inputId  = inputId,
             label    = tags$span(id = label_id, class = "sr-only", tagList(label_text, asterisk)),
             choices  = choices,
-            selected = isolate(input[[inputId]]) %||% character(0)
+            selected = isolate(input[[inputId]]) %||% character(0),
+            selectize = FALSE
           ),
           
           # Fallback (debug)
@@ -1746,17 +2044,27 @@ server <- function(input, output, session) {
         } else NULL
         
         # Row layout
+        # REPLACE your current "Row layout" div(...) with this:
         div(
+          role = "region",
+          `aria-labelledby` = vis_label_id,
           style = "margin-bottom: 2em; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 1.2em;",
+          
           div(style = "flex: 0 0 15%; min-width: 70px; display: flex; justify-content: center;", feedback_button),
+          
           div(style = "flex: 0 0 15%; min-width: 70px; display: flex; align-items: center; justify-content: center;",
               if (!is.null(help_btn)) help_btn else NULL),
-          div(style = "flex: 1; min-width: 200px;",
-              # Optional visible heading retained as bold text (NOT the label)
-              tags$b(tagList(label_text, asterisk)),
-              help_desc,                                # SR-only extra description if any
-              div(style = "margin-top: 0.5em;", input_ui))
+          
+          div(
+            style = "flex: 1; min-width: 200px;",
+            # Give the VISIBLE label an id and keep it visible
+            tags$b(id = vis_label_id, tagList(label_text, asterisk)),
+            
+            help_desc,                                # SR-only extra description if any
+            div(style = "margin-top: 0.5em;", input_ui)
+          )
         )
+        
       })
       
       section_color <- if (current_page() %in% names(section_colors)) section_colors[[current_page()]] else "#1d598a"
@@ -1808,18 +2116,35 @@ server <- function(input, output, session) {
       row <- page_data[i, ]
       qid <- row$input_id
       if (!is.na(row$notes) && nzchar(row$notes)) {
+        # stable ids for labelling the landmark
+        pop_id   <- paste0("pop-", qid)
+        label_id <- paste0(pop_id, "-label")
+        
         shinyBS::addPopover(
           session,
           id = paste0("help_icon_", qid),
-          title = "Note",
+          title   = "Note",
           content = HTML(row$notes),
           placement = "center",
-          trigger   = "click",     
-          options   = list(container = "body")
+          trigger   = "hover",
+          options = list(
+            container = "body",
+            html = TRUE,
+            # Bootstrap 3 popover template with ARIA landmark + labelled heading
+            template = sprintf(
+              '<div id="%s" class="popover qa-popover" role="region" aria-labelledby="%s">
+               <div class="arrow"></div>
+               <h3 id="%s" class="popover-title" role="heading" aria-level="3"></h3>
+               <div class="popover-content" role="document"></div>
+             </div>',
+              pop_id, label_id, label_id
+            )
+          )
         )
       }
     }
   })
+  
   
   
   # Navigation logic
@@ -1923,29 +2248,125 @@ server <- function(input, output, session) {
       question_text <- survey$question[survey$input_id == qid]
       
       # Open modal on click of the flag button
+      # Open modal on click of the flag button (REPLACE THIS BLOCK)
       observeEvent(input[[paste0("flag_", qid)]], {
-        showModal(modalDialog(
-          title = div(
-            "Feedback to question:",
+        # Stable IDs for ARIA relationships
+        modal_title_id <- paste0("fb-title-", qid)
+        question_id    <- paste0("fb-q-", qid)
+        form_id        <- paste0("fb-form-", qid)
+        
+        showModal(
+          modalDialog(
+            # Landmark region wrapping perceivable text
             tags$div(
-              style = "font-weight: normal; font-size: 90%; margin-top: 4px;", 
-              tags$i(question_text)
-            )
-          ),
-          textAreaInput(
-            inputId = paste0("temp_feedback_", qid),
-            label   = "Provide your comment below:",
-            value   = feedback_store[[qid]] %||% "",
-            width   = "100%",
-            height  = "120px"
-          ),
-          footer = tagList(
-            modalButton("Cancel"),
-            actionButton(paste0("send_feedback_", qid), "Send Feedback")
-          ),
-          easyClose = TRUE
+              role = "region",
+              `aria-labelledby` = modal_title_id,
+              class = "fb-modal-region",
+              
+              # Real structured heading for the modal title
+              tags$h2(id = modal_title_id, class = "modal-h2",
+                      "Feedback on this question"),
+              
+              # Question text (perceivable content, referenced by aria-describedby)
+              tags$p(id = question_id, class = "modal-question",
+                     tags$em(question_text)),
+              
+              # Form landmark for the input controls
+              tags$form(
+                id = form_id, role = "form",
+                `aria-labelledby` = modal_title_id,
+                textAreaInput(
+                  inputId = paste0("temp_feedback_", qid),
+                  label   = "Provide your comment below:",
+                  value   = feedback_store[[qid]] %||% "",
+                  width   = "100%",
+                  height  = "120px"
+                )
+              )
+            ),
+            
+            # Footer actions (Bootstrap will render this inside .modal-footer)
+            footer = tagList(
+              # We'll wrap these with a landmark via JS right after showModal
+              modalButton("Cancel"),
+              actionButton(paste0("send_feedback_", qid), "Send Feedback")
+            ),
+            
+            easyClose = TRUE
+          )
+        )
+        
+        # --- Patch the rendered modal for perfect landmarks & no duplication ---
+        # --- Patch the rendered modal AFTER it is fully shown (prevents duplicates) ---
+        shinyjs::runjs(sprintf("
+  (function(){
+    var modal = $('#shiny-modal');
+    if (!modal.length) return;
+
+    // Run once per open, after Bootstrap has finished showing it
+    modal.one('shown.bs.modal', function(){
+      var $m = $(this);
+      var tid = %1$s;   // title id
+      var qid = %2$s;   // question id
+      var sendBtnId = %3$s;
+
+      var $dialog  = $m.find('.modal-dialog').first();
+      var $content = $m.find('.modal-content').first();
+      var $body    = $m.find('.modal-body').first();
+      var $footer  = $m.find('.modal-footer').first();
+
+      // Dialog relationships / landmarks
+      $dialog.attr({
+        'role': 'dialog',
+        'aria-modal': 'true',
+        'aria-labelledby': tid,
+        'aria-describedby': qid
+      });
+      $content.attr('role','document');
+      $body.attr({'role':'region','aria-labelledby': tid});
+
+      // 1) Remove previously injected landmarks (idempotent)
+      $footer.find('.fb-actions-landmark').children().unwrap();
+
+      // 2) Remove any stray duplicates that sometimes get inserted
+      //    after .modal-footer by other handlers
+      $content
+        .children(':not(.modal-header):not(.modal-body):not(.modal-footer)')
+        .filter(function(){
+          // anything that looks like a duplicate button group or a lone Cancel
+          var isGroup = this.getAttribute('aria-label') === 'Feedback actions';
+          var hasBtns = $(this).find('button').length >= 1;
+          var isLoneCancel = $(this).is('button.btn[data-dismiss], button.btn[data-bs-dismiss]');
+          return isGroup || hasBtns || isLoneCancel;
+        }).remove();
+
+      // 3) Wrap exactly the two footer buttons in a single landmark (once)
+      if (!$footer.children('.fb-actions-landmark').length) {
+        $footer.wrapInner('<div class=\"fb-actions-landmark\" role=\"region\" aria-label=\"Feedback actions\"></div>');
+      }
+
+      // Ensure each visible button has an aria-label that matches its text
+      $footer.find('button').attr('aria-label', function(_, val){
+        var t = (this.textContent || '').trim();
+        return t || val || null;
+      });
+
+      // Focus the textarea for quicker input
+      var $ta = $m.find('textarea[id^=\"temp_feedback_\"]').first();
+      if ($ta.length) $ta.trigger('focus');
+    });
+  })();
+",
+                               jsonlite::toJSON(modal_title_id, auto_unbox = TRUE),
+                               jsonlite::toJSON(question_id,    auto_unbox = TRUE),
+                               jsonlite::toJSON(paste0('send_feedback_', qid), auto_unbox = TRUE)
         ))
+        
       })
+      
+      
+      
+      
       
       # Save feedback, close modal, and update the icon + accessibility attributes
       observeEvent(input[[paste0("send_feedback_", qid)]], {
@@ -2152,8 +2573,8 @@ server <- function(input, output, session) {
           extensions = 'Buttons',
           escape = FALSE,
           caption = htmltools::tags$caption(
-            style = "caption-side: top; text-align: left;",
-            "Table: Your answers by section and subframework."),
+            style = "caption-side: top; text-align: left; color:black;",
+            "Your answers by section and subframework."),
           options = list(
             dom = "Bfrtip",
             buttons = c("copy", "csv", "excel", "pdf", "print"),
@@ -2211,7 +2632,7 @@ server <- function(input, output, session) {
     valueBox(
       value    = paste0("Level ", info$level),
       subtitle = paste0(info$title, " — ", info$desc),
-      icon     = icon(info$icon),
+      icon     = icon_dec(info$icon),
       color    = info$color
     )
   })
@@ -2227,7 +2648,7 @@ server <- function(input, output, session) {
     valueBox(
       paste0(res$yes, " / ", res$total),
       subtitle = "Total Yes Answers",
-      icon = icon("check-circle"),
+      icon = icon_dec("check-circle"),
       color = "green"
     )
   })
@@ -2238,7 +2659,7 @@ server <- function(input, output, session) {
     valueBox(
       paste0(res$yes, " / ", res$total),
       subtitle = "Minimal Level - Yes Answers",
-      icon = icon("flag-checkered"),
+      icon = icon_dec("flag-checkered"),
       color = "yellow"
     )
   })
@@ -2250,8 +2671,8 @@ server <- function(input, output, session) {
     valueBox(
       paste0(res$yes, " / ", res$total),
       subtitle = "Detailed Level - Yes Answers",
-      icon = icon("clipboard-check"),
-      color = "blue"
+      icon = icon_dec("clipboard-check"),
+      color = "navy"
     )
   })
   
@@ -2262,46 +2683,46 @@ server <- function(input, output, session) {
   # Section: Content & Structure
   output$score_content_minimal <- renderValueBox({
     res <- score_total_level("minimal", section = "1. Content & Structure")
-    valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon("flag"), color = "yellow")
+    valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon_dec("flag"), color = "yellow")
   })
   
   output$score_content_detailed <- renderValueBox({
     res <- score_total_level("detailed", section = "1. Content & Structure")
-    valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon("clipboard"), color = "blue")
+    valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon_dec("clipboard"), color = "navy")
   })
   
   # Section: Implementation
   output$score_implementation_minimal <- renderValueBox({
     res <- score_total_level("minimal", section = "2. Implementation")
-    valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon("flag"), color = "yellow")
+    valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon_dec("flag"), color = "yellow")
   })
   
   output$score_implementation_detailed <- renderValueBox({
     res <- score_total_level("detailed", section = "2. Implementation")
-    valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon("clipboard"), color = "blue")
+    valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon_dec("clipboard"), color = "navy")
   })
   
   
   # Section: Evaluation
   output$score_evaluation_minimal <- renderValueBox({
     res <- score_total_level("minimal", section = "3. Evaluation")
-    valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon("flag"), color = "yellow")
+    valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon_dec("flag"), color = "yellow")
   })
   
   output$score_evaluation_detailed <- renderValueBox({
     res <- score_total_level("detailed", section = "3. Evaluation")
-    valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon("clipboard"), color = "blue")
+    valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon_dec("clipboard"), color = "navy")
   })
   
   # Section: Licensing & Ethics
   output$score_ethics_minimal <- renderValueBox({
     res <- score_total_level("minimal", section = "4. Licensing & Ethics")
-    valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon("flag"), color = "yellow")
+    valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon_dec("flag"), color = "yellow")
   })
   
   output$score_ethics_detailed <- renderValueBox({
     res <- score_total_level("detailed", section = "4. Licensing & Ethics")
-    valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon("clipboard"), color = "blue")
+    valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon_dec("clipboard"), color = "navy")
   })
 
   ## SCORE BY SUBFRAMEWORK
@@ -2309,45 +2730,45 @@ server <- function(input, output, session) {
   #SF: Essential
   output$score_essential_minimal <- renderValueBox({
     res <- score_total_level("minimal", subfw = "essential")
-    valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon("flag"), color = "yellow")
+    valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon_dec("flag"), color = "yellow")
   })
   
   output$score_essential_detailed <- renderValueBox({
     res <- score_total_level("detailed", subfw = "essential")
-    valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon("clipboard"), color = "blue")
+    valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon_dec("clipboard"), color = "navy")
   })
   
   # SF: FAIR
   output$score_fair_minimal <- renderValueBox({
     res <- score_total_level("minimal", subfw = "fair")
-    valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon("flag"), color = "yellow")
+    valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon_dec("flag"), color = "yellow")
   })
   
   output$score_fair_detailed <- renderValueBox({
     res <- score_total_level("detailed", subfw = "fair")
-    valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon("clipboard"), color = "blue")
+    valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon_dec("clipboard"), color = "navy")
   })
   
   # SF: MVS
   output$score_mvs_minimal <- renderValueBox({
     res <- score_total_level("minimal", subfw = "mvs")
-    valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon("flag"), color = "yellow")
+    valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon_dec("flag"), color = "yellow")
   })
   
   output$score_mvs_detailed <- renderValueBox({
     res <- score_total_level("detailed", subfw = "mvs")
-    valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon("clipboard"), color = "blue")
+    valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon_dec("clipboard"), color = "navy")
   })
   
   # SF: ELSI
   output$score_elsi_minimal <- renderValueBox({
     res <- score_total_level("minimal", subfw = "elsi")
-    valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon("flag"), color = "yellow")
+    valueBox(paste0(res$yes, " / ", res$total), "Minimal Level", icon_dec("flag"), color = "yellow")
   })
   
   output$score_elsi_detailed <- renderValueBox({
     res <- score_total_level("detailed", subfw = "elsi")
-    valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon("clipboard"), color = "blue")
+    valueBox(paste0(res$yes, " / ", res$total), "Detailed Level", icon_dec("clipboard"), color = "navy")
   })
   
   
@@ -2379,8 +2800,8 @@ server <- function(input, output, session) {
       filtered,
       escape = FALSE,
       caption = htmltools::tags$caption(
-        style = "caption-side: top; text-align: left;",
-        "Table: Suggested best practices for questions answered No or left unanswered."),
+        style = "caption-side: top; text-align: left; color:black;",
+        "Suggested best practices for questions answered No or left unanswered."),
       options = list(
         dom = "Bfrtip",
         buttons = c("copy", "csv", "excel", "pdf", "print"),
@@ -2445,7 +2866,7 @@ server <- function(input, output, session) {
       levels = c("1. Content & Structure", "D", "2. Implementation", "Comz", "3. Evaluation","F", "4. Licensing & Ethics") 
     )
     
-    library(ggalluvial)
+    
     ggplot(df) +
       theme_void() +
       # Top legends: horizontal, Answer + Level
@@ -2470,7 +2891,7 @@ server <- function(input, output, session) {
         values = c(
           "Yes" = "darkgreen",
           "No" = "darkred",
-          "Not applicable" = "lightblue",
+          "Not applicable" = "lightnavy",
           "No answer" = "grey",
           "20" = "#ffffff00"
         ),
@@ -2556,9 +2977,12 @@ server <- function(input, output, session) {
         input_ui <- switch(
           row$input_type,
           "mc" = radioButtons(input_id, label="Select your answer", choices = choices, inline = FALSE),
-          "select" = selectInput(input_id, label=tags$span("Select your experience", class="sr-only"), choices = choices),
+          "select" = selectInput(input_id, label=tags$span("Select your experience", class="sr-only"),
+                                 choices = choices, selectize=FALSE),
           "textSlider" = shinyWidgets::sliderTextInput(input_id, 
-                                                       label=tags$span("Select your knowledge or opinion", class="sr-only"), choices = choices, force_edges = TRUE),
+                                                       label=tags$span("Select your knowledge or opinion",
+                                                                       class="sr-only"),
+                                                       choices = choices, force_edges = TRUE),
           "text" = textAreaInput(input_id, label=tags$span("Your answer", class="sr-only"), placeholder = "Type your answer here...", height = "100px"),
           NULL
         )
@@ -2644,11 +3068,54 @@ server <- function(input, output, session) {
     )
     
     # 5) Confirmation
-    showModal(modalDialog(
-      title = "Thank you!",
-      "Your feedback has been submitted successfully.",
-      easyClose = TRUE
-    ))
+    # Confirmation
+    showModal(
+      modalDialog(
+        easyClose = TRUE,
+        footer = NULL,   # no footer buttons here
+        tags$div(
+          role = "region",
+          `aria-labelledby` = "gf-thankyou-title",
+          class = "gf-modal-region",
+          
+          # Structured heading for modal title
+          tags$h2(
+            id = "gf-thankyou-title",
+            class = "modal-h2",
+            "Thank you!"
+          ),
+          
+          # Body content wrapped as document
+          tags$div(
+            role = "document",
+            class = "gf-modal-body",
+            tags$p("Your feedback has been submitted successfully."),
+            tags$p("We appreciate your contribution to improving the Skills4EOSC Quality Assurance Framework."),
+            tags$p("You may now close this window or continue using the app.")
+          )
+        )
+      )
+    )
+    
+    # After rendering, ARIA dialog roles (like with feedback modals)
+    shinyjs::runjs("
+  (function(){
+    var $m = $('#shiny-modal').last();
+    if (!$m.length) return;
+
+    var $dialog  = $m.find('.modal-dialog').first();
+    var $content = $m.find('.modal-content').first();
+    var $body    = $m.find('.modal-body').first();
+
+    $dialog.attr({
+      'role': 'dialog',
+      'aria-modal': 'true',
+      'aria-labelledby': 'gf-thankyou-title'
+    });
+    $content.attr('role','document');
+    $body.attr({'role':'region','aria-labelledby':'gf-thankyou-title'});
+  })();
+")
   })
   
 
